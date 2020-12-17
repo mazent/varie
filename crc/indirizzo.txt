@@ -1,0 +1,8 @@
+cfr   http://www.ross.net/crc/crcpaper.html
+
+e anche http://www.ross.net/crc/
+
+o anche http://www.repairfaq.org/filipg/LINK/F_crc_v3.html
+
+Per generare le tabelle:
+	http://www.sunshine2k.de/coding/javascript/crc/crc_js.html
