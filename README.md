@@ -11,6 +11,10 @@ Calcolo del crc
 
 base per documento html
 
+## FSM
+
+macchina a stati
+
 ## PYBASE
 
 Da usare con un progetto page 4.25.1
