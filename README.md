@@ -2,6 +2,9 @@
 
 codice e altro
 
+## CIRCO
+
+buffer circolare
 
 ## CRC
 
