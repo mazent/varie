@@ -25,17 +25,17 @@ static uint8_t * trova_buf(S_CIRCO * pC)
     return u.p ;
 }
 
-static void * inc_void(void * v, uint16_t dim)
+static void * inc_void(const void * v, uint16_t dim)
 {
     union {
-        void * v ;
+        const void * v ;
         uint8_t * p ;
     } u ;
 
     u.v = v ;
     u.p += dim ;
 
-    return u.v ;
+    return u.p ;
 }
 
 bool CIRCO_ins(S_CIRCO * pC, const void * dati, uint16_t dim)
@@ -68,7 +68,7 @@ bool CIRCO_ins(S_CIRCO * pC, const void * dati, uint16_t dim)
 
             pC->tot = DIM_CIRCO ;
             pC->leggi = 0 ;
-            dati += dim - DIM_CIRCO ;
+            dati = inc_void(dati, dim - DIM_CIRCO) ;
             memcpy(buf, dati, DIM_CIRCO) ;
 
             // Fatto
@@ -103,7 +103,7 @@ bool CIRCO_ins(S_CIRCO * pC, const void * dati, uint16_t dim)
 
             dim -= CODA ;
             if (dim) {
-                memcpy(buf, dati + CODA, dim) ;
+                memcpy(buf, inc_void(dati, CODA), dim) ;
                 pC->tot += dim ;
             }
         }
@@ -234,7 +234,7 @@ uint16_t CIRCO_est2(S_CIRCO * pC, uint8_t finoa, void * dati, uint16_t dim)
 #ifndef NDEBUG
                 memset(l, RIEMPITIVO_DI_DBG, DIM) ;
 #endif
-                dati += DIM ;
+                dati = inc_void(dati, DIM) ;
                 letti += DIM ;
 
                 // fino a ?

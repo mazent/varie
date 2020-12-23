@@ -1,5 +1,3 @@
-#define STAMPA_DBG
-#include "utili.h"
 #include "tram.h"
 
 /*
@@ -16,6 +14,8 @@
 
 static const uint32_t RIF = 0x55555555 ;
 static const uint32_t VAL = 0xAAAAAAAA ;
+
+#define NEGA(x)          ( ~(unsigned int) (x) )
 
 static void * casta(uint32_t questo)
 {
@@ -42,7 +42,6 @@ static uint32_t DataWalk1(uint32_t Base)
         ram[0] = uno ;
 
         if (uno != ram[0]) {
-        	DBG_ERR ;
             break ;
         }
 
@@ -71,7 +70,6 @@ static uint32_t DataWalk0(uint32_t Base)
         ram[0] = zero ;
 
         if (zero != ram[0]) {
-        	DBG_ERR ;
             break ;
         }
 
@@ -103,7 +101,6 @@ static uint32_t AddrWalk1(uint32_t Base, uint32_t numByte)
 
         // In questo modo mi fermo al primo errore
         if (static_cast<TIPO>(RIF) != ram[0]) {
-        	DBG_ERR ;
             break ;
         }
 
@@ -137,7 +134,6 @@ static uint32_t AddrWalk0(uint32_t Base, uint32_t numByte)
         ram[zero] = static_cast<TIPO>(VAL) ;
 
         if (static_cast<TIPO>(RIF) != ram[numByte - 1]) {
-        	DBG_ERR ;
             break ;
         }
 
@@ -170,7 +166,6 @@ static bool accedi(volatile TIPO * ram, uint32_t sposta)
         for (i=0 ; i<DIM ; ++i, ++val) {
         	pos = i << sposta ;
         	if (ram[pos] != val) {
-            	DBG_ERR ;
         		break ;
         	}
         }
@@ -189,7 +184,6 @@ static bool accedi(volatile TIPO * ram, uint32_t sposta)
         	TIPO nval = NEGA(val) ;
         	pos = i << sposta ;
         	if (ram[pos] != nval) {
-            	DBG_ERR ;
         		break ;
         	}
         }
@@ -266,7 +260,6 @@ static bool Accesso32(uint32_t Base, uint32_t numByte)
         val = 1 ;
         for (i=0 ; i<DIM ; ++i, ++val) {
         	if (ram[i] != val) {
-            	DBG_ERR ;
         		break ;
         	}
         }
@@ -280,7 +273,6 @@ static bool Accesso32(uint32_t Base, uint32_t numByte)
         val = 1 ;
         for (i=0 ; i<DIM ; ++i, ++val) {
         	if (ram[i] != NEGA(val)) {
-            	DBG_ERR ;
         		break ;
         	}
         }
@@ -302,7 +294,6 @@ uint32_t TRAM_DataWalk1(uint32_t Base, RAM_DATA_BUS rdb)
     case RDB_32_BIT:
         return DataWalk1<uint32_t>(Base) ;
     default:
-        assert(false) ;
         return NEGA(0) ;
     }
 }
@@ -318,7 +309,6 @@ uint32_t TRAM_DataWalk0(uint32_t Base, RAM_DATA_BUS rdb)
     case RDB_32_BIT:
         return DataWalk0<uint32_t>(Base) ;
     default:
-        assert(false) ;
         return NEGA(0) ;
     }
 }
@@ -335,7 +325,6 @@ uint32_t TRAM_AddrWalk1(uint32_t Base, uint32_t numByte, RAM_DATA_BUS rdb)
     case RDB_32_BIT:
         return AddrWalk1<uint32_t>(Base, numByte) ;
     default:
-        assert(false) ;
         return NEGA(0) ;
     }
 }
@@ -351,7 +340,6 @@ uint32_t TRAM_AddrWalk0(uint32_t Base, uint32_t numByte, RAM_DATA_BUS rdb)
     case RDB_32_BIT:
         return AddrWalk0<uint32_t>(Base, numByte) ;
     default:
-        assert(false) ;
         return NEGA(0) ;
     }
 }
@@ -368,7 +356,6 @@ bool TRAM_accedi(uint32_t Base, uint32_t numByte, RAM_DATA_BUS rdb)
     case RDB_32_BIT:
         return Accesso32(Base, numByte) ;
     default:
-        assert(false) ;
         return false ;
     }
 }

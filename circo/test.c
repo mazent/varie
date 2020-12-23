@@ -1,27 +1,45 @@
 #include <stdio.h>
 #include <string.h>
 #include "circo.h"
-#include "__fc_builtin.h"
 
 #define MAX_BUFF        20
 
 #define DBG_ERR     printf("ERR %d\r\n", __LINE__)
 
+uint8_t db[MAX_BUFF] ;
+
 static union {
     S_CIRCO c ;
-    uint8_t b[sizeof(S_CIRCO) - 1 + MAX_BUFF] ;
+    uint8_t b[sizeof(S_CIRCO) + MAX_BUFF] ;
 } u ;
+
+#ifdef __FRAMAC__
+#   include "__fc_builtin.h"
+
+static void crea_dati(void)
+{
+    //@ loop unroll MAX_BUFF;
+    for (int i = 0 ; i < MAX_BUFF ; ++i) {
+        db[i] = Frama_C_interval(0, 255) ;
+    }
+}
+
+#else
+static void crea_dati(void)
+{
+    //@ loop unroll MAX_BUFF;
+    for (int i = 0 ; i < MAX_BUFF ; ++i) {
+        db[i] = i ;
+    }
+}
+
+#endif
 
 int main(void)
 {
     CIRCO_iniz(&u.c, MAX_BUFF) ;
 
-    // Creo i dati
-    uint8_t db[MAX_BUFF] ;
-    //@ loop unroll MAX_BUFF;
-    for (int i = 0 ; i < MAX_BUFF ; ++i) {
-        db[i] = Frama_C_interval(0, 255) ;
-    }
+    crea_dati() ;
 
     // Inserimento
     if ( !CIRCO_ins(&u.c, db, MAX_BUFF) ) {
@@ -49,6 +67,14 @@ int main(void)
     }
 
     CIRCO_svuota(&u.c) ;
+
+    if (CIRCO_dim(&u.c) != 0) {
+        DBG_ERR ;
+    }
+
+    if (CIRCO_liberi(&u.c) != MAX_BUFF) {
+        DBG_ERR ;
+    }
 
     do {
         // Inserimento
