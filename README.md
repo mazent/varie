@@ -6,6 +6,10 @@ codice e altro
 
 buffer circolare
 
+## CLD
+
+salvataggio parametri collaudo
+
 ## CRC
 
 Calcolo del crc
