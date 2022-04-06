@@ -39,7 +39,7 @@ class MAIN(gui.GUI):
         self.Button2.configure(command=self.Eco)
         # tasto che inizia/termina operazione (cfr self.evnFine)
         self.Button44.configure(command=self.bteco)
-        
+
 
     def __init__(self, master=None):
         self.master = master
@@ -54,7 +54,7 @@ class MAIN(gui.GUI):
         self._imposta_tab(TAB_CHIUSA)
 
         self.dispo = None
-        
+
         # tasti che iniziano e terminano operazioni
         self.evnFine = threading.Event()
 
@@ -75,17 +75,20 @@ class MAIN(gui.GUI):
             'fbteco': self._fine_bteco,
         }
         self._esegui_GUI()
-        
+
     def _fine_bteco(self):
         # Il thd ha finito
         gui_support.Messaggio.set("qualcosa")
-        
+
         # Il mio bottone e' riutilizzabile ...
         self.Button44['text'] = 'Eco'
         self.Button44['state'] = gui.tk.NORMAL
 
         # ... e anche quelli incompatibili
         self.Button15['state'] = gui.tk.NORMAL
+
+        # ... pronto!
+        self.evnFine.clear()
 
 
     def __del__(self):
@@ -196,10 +199,10 @@ class MAIN(gui.GUI):
         else:
             # Fine
             self.Button44['state'] = gui.tk.DISABLED
-            
+
             # segnalo al thd (che deve controllare sempre che l'evento sia set)
             self.evnFine.clear()
-            
+
             # quando il thd finisce mi manda un messaggio
 
 

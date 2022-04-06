@@ -1,0 +1,126 @@
+<HTML>
+
+<!--
+    Simboli: https://htmlhelp.com/reference/html40/entities/
+
+    Per i grafici:
+        *) Il file di testo puo' essere creato con http://www.asciiflow.com/
+           Le immagini si ottengono con:
+                java -jar ditaa0_9.jar ?.txt ?.png
+        *) dot (www.graphviz.org)
+		*) https://www.websequencediagrams.com/
+		*) https://mermaid-js.github.io/mermaid-live-editor
+
+
+    Analisi python in github
+        https://codeclimate.com/oss/dashboard
+
+	hex speak: http://www.datagenetics.com/blog/march42013/index.html
+	    g -> 9    l -> 1    q ->        v ->
+	    h ->      m ->      r ->        w ->
+	    i -> 1    n ->      s -> 5      x ->
+	    j ->      o -> 0    t -> 7      y ->
+	    k ->      p ->      u ->        z -> 2
+
+	stile: http://www.w3.org/TR/html401/present/styles.html#edef-STYLE
+	.nome -> class="nome"
+	#nome -> id="nome"  (p.e. nei link interni)
+
+	formule:
+		https://www.mathjax.org/
+		https://www.caam.rice.edu/~heinken/latex/symbols.pdf
+		$$...$$ and \[...\] for displayed mathematics, and \(...\) for in-line mathematics
+-->
+
+<HEAD>
+    <TITLE>Collaudo</TITLE>
+    <STYLE TYPE="text/css">
+		H1              { text-align: center }
+        H2              { text-align: center }
+		P               { text-align: justify }
+		P:first-letter  { margin-left: 1cm }
+		DL:first-letter { margin-left: 1cm }
+		DT:first-letter { margin-left: 2cm }
+		DD:first-letter { margin-left: 2cm }
+		CAPTION         { font-weight: bold }
+		TD.titolo       { text-align: center; font-weight: bold; color: blue }
+        TD.centra       { text-align: center }
+
+		.evidenzia      { font-weight: bold; color: blue; font-size: 2em }
+		.attenzione     { font-weight: bold; color: red }
+		.corsivo		{ font-style: italic }
+		.neretto	    { font-weight: bold }
+		.nullo			{ text-decoration: line-through}
+    </STYLE>
+
+	<script type="text/javascript" async
+		src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+	</script>
+</HEAD>
+
+<BODY>
+    <H1>Collaudo <CODE>SCxxx</CODE></H1>
+
+	    <P>La porta seriale viene usata in produzione durante il collaudo o durante il debug (stampe)
+
+        <P>La comunicazione avviene a <CODE>115200,8N1</CODE>
+		
+	<H2>Protocollo</H2>
+
+        <OL>Il protocollo prevede:
+            <LI>Un byte di inizio trama: <CODE>0xC5</CODE>
+            <LI>I byte del messaggio
+            <LI>Due byte di crc calcolato sul messaggio (<CITE>big endian</CITE>, <A target="_blank" href="https://pypi.org/project/crcmod/"><CODE>crcmod.Crc(0x11021, 0xCxxx, False, 0x0000)</CODE></A>)
+            <LI>Un byte di fine trama: <CODE>0xC2</CODE>
+        </OL>
+
+        <P>Se nella trama compaiono i byte di inizio o di fine trama,
+        occorre sostituirli col carattere di fuga <CODE>0xCF</CODE> seguito dal <CODE>not</CODE>
+        del carattere sostituito. Ad esempio, <CODE>0xC5</CODE> diventa <CODE>0xCF 0x3A</CODE>.
+
+        <P>Anche i caratteri di fuga obbediscono alla stessa regola
+
+		<UL>Un messaggio &egrave; valido se:
+			<LI>vengono ricevuti i caratteri di inizio e fine trama
+			<LI>il crc &egrave; corretto
+		</UL>
+
+
+	<H2>Comandi</H2>
+	
+		<P>Il messaggio inviato col protocollo precedente &egrave; formato da due byte di comando seguiti da zero o pi&ugrave;
+		byte di parametri. La risposta ha lo stesso formato
+
+        <P>I due bit pi&ugrave; significativi del comando hanno il significato che segue:
+        <TABLE align=center>
+            <TR><TD><CODE>00</CODE>     <TD>Comando
+            <TR><TD><CODE>01</CODE>     <TD>Risposta a comando sconosciuto
+            <TR><TD><CODE>10</CODE>     <TD>Risposta valida
+            <TR><TD><CODE>11</CODE>     <TD>Errore nell'esecuzione del comando
+        </TABLE>
+
+		<P>La dimensione del messaggio &egrave; di <CODE class="evidenzia">102</CODE> bytes,
+		per cui i parametri del comando o i dati associati alla risposta possono avere la dimensione massima di <CODE class="evidenzia">100</CODE> bytes
+
+		<P>Il formato dei dati &egrave; <CITE>little endian</CITE>
+
+        <TABLE align=center border="1" cellspacing="0" cellpadding="4">
+            <CAPTION>Elenco dei comandi</CAPTION>
+            <TR>
+				<TH>Codice
+				<TH>Dati comando
+				<TH>Dati risposta
+				<TH>Funzione
+				<TH>Note
+            <TR><TD class="titolo" colspan=5>Debug
+            <TR>
+				<TD><CODE>0x0001</CODE>
+				<TD>Qls.
+				<TD>Gli stessi inviati
+				<TD>Eco
+				<TD>&nbsp;
+            <TR>
+		</TABLE>
+
+</BODY>
+</HTML>
