@@ -84,6 +84,8 @@
 			<LI>vengono ricevuti i caratteri di inizio e fine trama
 			<LI>il crc &egrave; corretto
 		</UL>
+		
+		<P>La dimensione massima del messaggio &egrave; <CODE>102 bytes</CODE>
 
 
 	<H2>Comandi</H2>
@@ -99,10 +101,16 @@
             <TR><TD><CODE>11</CODE>     <TD>Errore nell'esecuzione del comando
         </TABLE>
 
-		<P>La dimensione del messaggio &egrave; di <CODE class="evidenzia">102</CODE> bytes,
-		per cui i parametri del comando o i dati associati alla risposta possono avere la dimensione massima di <CODE class="evidenzia">100</CODE> bytes
+		<P>I parametri del comando o i dati associati alla risposta possono avere la dimensione massima di <CODE>100</CODE> bytes
 
-		<P>Il formato dei dati &egrave; <CITE>little endian</CITE>
+		<P>Dove applicabile, si usa <CITE>little endian</CITE>
+		
+		<UL>Legenda:
+			<LI><CODE>TIPO[DIM]</CODE>: sequenza di <CODE>DIM</CODE> elementi (di tipo <CODE>TIPO</CODE>)
+			<LI><CODE>TIPO[DIM1 | DIM2]</CODE>: sequenza di dimensione <CODE>DIM1</CODE> oppure <CODE>DIM2</CODE>
+			<LI><CODE>TIPO[DIM1 .. DIM2]</CODE>: sequenza di dimensione minima <CODE>DIM1</CODE> e massima <CODE>DIM2</CODE>
+			<LI><CODE>bd_addr</CODE>: <CODE>uint8_t[6]</CODE>
+		</UL>
 
         <TABLE align=center border="1" cellspacing="0" cellpadding="4">
             <CAPTION>Elenco dei comandi</CAPTION>
