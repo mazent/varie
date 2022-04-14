@@ -10,6 +10,7 @@ import random
 import string
 import time
 import tkinter.filedialog as dialogo
+import inspect
 
 
 def validaStringa(x, dimmin=None, dimmax=None):
@@ -256,7 +257,10 @@ class Problema(Exception):
 
     def __init__(self, msg):
         Exception.__init__(self)
-        self.msg = msg
+
+        # recupero la posizione del chiamante
+        fi = inspect.getframeinfo(inspect.currentframe().f_back)
+        self.msg = '<' + fi.filename + ': ' + str(fi.lineno) + '> ' + msg
 
     def __str__(self):
         return self.msg
@@ -357,7 +361,7 @@ def byte_casuali(quanti):
     return vc
 
 
-def ba_da_stringa(stringa, sep='-'):
+def ba_da_stringa(stringa, sep='-', base=16):
     """
     Converte una stringa esadecimale di tipo 'xx-yy-zz'
     nel bytearray [xx, yy, zz]
@@ -365,11 +369,12 @@ def ba_da_stringa(stringa, sep='-'):
     :param sep: separatore
     :return: il bytearray
     """
+    stringa = stringa.lstrip(' ')
     ba = bytearray()
     x = stringa.split(sep)
     try:
         for y in x:
-            ba.append(int(y, base=16))
+            ba.append(int(y, base=base))
     except ValueError:
         ba = None
 
@@ -563,3 +568,43 @@ if __name__ == '__main__':
     # MILLISEC = 123456789.34
     # print(gomsm((MILLISEC,), (1000, 60, 60, 24)))
     # print(stampaDurata(MILLISEC))
+
+
+def lettera_anno(anno: int):
+    # vedi https://en.wikipedia.org/wiki/Vehicle_identification_number
+    LA = {
+        2010: 'A',
+        2011: 'B',
+        2012: 'C',
+        2013: 'D',
+        2014: 'E',
+        2015: 'F',
+        2016: 'G',
+        2017: 'H',
+        2018: 'J',
+        2019: 'K',
+        2020: 'L',
+        2021: 'M',
+        2022: 'N',
+        2023: 'P',
+        2024: 'R',
+        2025: 'S',
+        2026: 'T',
+        2027: 'V',
+        2028: 'W',
+        2029: 'X',
+        2030: 'Y',
+        2031: '1',
+        2032: '2',
+        2033: '3',
+        2034: '4',
+        2035: '5',
+        2036: '6',
+        2037: '7',
+        2038: '8',
+        2039: '9',
+    }
+    try:
+        return LA[anno]
+    except KeyError:
+        return '?'
