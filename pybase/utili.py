@@ -510,10 +510,22 @@ class LOGGA:
 
     def error(self, msg):
         if self.logger is not None:
+            # recupero la posizione del chiamante
+            fi = inspect.getframeinfo(inspect.currentframe().f_back)
+
+            # e la appiccico in fondo
+            msg = msg + ' <' + fi.filename + ': ' + str(fi.lineno) + '>'
+
             self.logger.error(msg)
 
     def critical(self, msg):
         if self.logger is not None:
+            # recupero la posizione del chiamante
+            fi = inspect.getframeinfo(inspect.currentframe().f_back)
+
+            # e la appiccico in fondo
+            msg = msg + ' <' + fi.filename + ': ' + str(fi.lineno) + '>'
+
             self.logger.critical(msg)
 
 
