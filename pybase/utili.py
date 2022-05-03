@@ -9,6 +9,7 @@ import threading
 import random
 import string
 import time
+import serial.tools.list_ports as lp
 import tkinter.filedialog as dialogo
 import inspect
 
@@ -134,14 +135,11 @@ def strVer(vn):
         Converte la versione del fw in stringa
     """
 
-    vmag = vn >> 24
-    vmin = vn & 0xFFFFFF
+    vmag = (vn >> 24) & 0xFF
+    vmin = (vn >> 16) & 0xFF
+    rev = vn & 0xFFFF
 
-    ver = str(vmag)
-    ver += "."
-    ver += str(vmin)
-
-    return ver
+    return '{}.{}.{}'.format(vmag, vmin, rev)
 
 
 def verStr(vs):
@@ -360,6 +358,9 @@ def byte_casuali(quanti):
         vc.append(x)
     return vc
 
+def numero_casuale(max, min=0):
+    return random.randint(min, max)
+
 
 def ba_da_stringa(stringa, sep='-', base=16):
     """
@@ -486,6 +487,13 @@ class CRONOMETRO():
 
 
 class LOGGA:
+    # Lo script principale inizializza, p.e.:
+    #     logging.basicConfig(
+    #         filename='pippo.txt',
+    #         level=logging.DEBUG,
+    #         format='%(asctime)s - %(levelname)s - %(message)s')
+    #     logging.getLogger().addHandler(logging.StreamHandler())
+    # Tutti istanziano questa classe e usano i suoi metodi
 
     def __init__(self, logger=None):
         if logger is None:
@@ -529,6 +537,7 @@ class LOGGA:
             self.logger.critical(msg)
 
 
+# p.e.: nomefile = utili.scegli_file_esistente(self.master, [('expander', '.cyacd')])
 def scegli_file_esistente(master, filetypes):
     opzioni = {
         'parent': master,
@@ -561,6 +570,10 @@ def seconds_since_the_epoch():
     return int(time.time())
 
 
+def seconds_since_the_epoch_float():
+    return round(time.time(), 3)
+
+
 def brokendown_time(epoch):
     bdt = time.gmtime(epoch)
     return {
@@ -571,6 +584,25 @@ def brokendown_time(epoch):
         'minuti': bdt.tm_min,
         'secondi': bdt.tm_sec
     }
+
+
+def lista_seriali():
+    diz = {}
+    lista = lp.comports()
+    for elem in lista:
+        desc = elem.description
+        if elem.device in desc:
+            pos = desc.find(elem.device)
+            desc = desc[:pos - 1].strip()
+
+        if elem.vid is None:
+            diz[elem.device] = (desc,)
+        else:
+            manuf = '?'
+            if elem.manufacturer is not None:
+                manuf = elem.manufacturer.strip()
+            diz[elem.device] = (desc, manuf, elem.vid, elem.pid)
+    return diz
 
 
 if __name__ == '__main__':
