@@ -3,82 +3,122 @@
 """
     Racchiude tutto quanto serve per la prova dell'eco
     L'applicazione deve avere:
-        *) Un bottone per iniziare e terminare la prova
+        *) Un bottone per iniziare e terminare la prova (deve invocare Bottone())
+           p.e.
+                self.Button5.configure(command=self._ecoProva)
+                ...
+                def _ecoProva(self):
+                    self.eco.Bottone()
         *) Una edit col numero di prove
         *) Una edit col numero di byte per prova
         *) Una etichetta per i messaggi
         *) Una progressbar
-        *) Una coda dove inviare i messaggi di aggiornamento grafica ...
-        *) ... e le funzioni che gestiscono i messaggi:
-              *) ecoFinePerErrore(quanti)
-              *) ecoInfinito()
-              *) ecoFinito(quanti)
-           Queste funzioni devono invocare quelle omonime dell'oggetto passando
-           il dispositivo
-    Esempio: https://svnad.italia.texa.org/FW/TMDS/540-MK0/trunk/SC673_U8/host
+        *) La funzione che implementa l'eco vero e proprio: riceve i
+           dati da trasmettere (o niente) e restituisce l'esito (bool)
+        *) Una coda dove inviare il messaggio di fine prova:
+                msgFineEco
+           Il messaggio puo' essere cambiato con: cambia_messaggi()
+
+    Quindi:
+        self.eco = eco.ECO(self.Button5,
+                           gui_support.numEco,
+                           gui_support.dimEco,
+                           gui_support.Messaggio,
+                           self.TProgressbar1,
+                           self._un_eco,
+                           self.codaEXE)
+        self.eco.cambia_limite(dispo.DISPO.DIM_DATI_CMD)
+
 """
 
 import random
 import threading
-import time
+import queue as coda
 
 import utili
 
+MSG_FINE_X_ERRORE = "fine x errore"
+MSG_INFINITO = "prova infinita"
+MSG_FINITO = "provane un tot"
 
-class ECO:
+
+class ECO(threading.Thread):
+
+    def __del__(self):
+        self.esci()
 
     def __init__(self, bottone,
                  numeco,
                  dimeco,
                  msg,
                  progBar,
-                 coda):
+                 fn,
+                 coda_fine):
+        # salvo i parametri
         self.bottone = bottone
         self.numEco = numeco
         self.dimEco = dimeco
         self.msg = msg
         self.progBar = progBar
-        self.coda = coda
+        self.funz_eco = fn
+        self.codaf = coda_fine
 
-        self.continuaEco = False
+        # thd
+        self.codat = coda.Queue()
+        self.thd = False
 
-        self.ecoConta = 0
-        self.ecoTot = 0
+        # per le prove
+        self.continua = False
+
         self.crono = utili.CRONOMETRO()
-        self.ecoMux = threading.Lock()
         self.ecoQuanti = 0
 
         self.timerEco = None
-        self.durataTimer = None
 
         self.testo = self.bottone["text"]
 
         self.ecoLimite = 256
         self.dati = None
 
-        self.ecoFnFinePerErrore = "ecoFinePerErrore"
-        self.ecoFnInfinito = "ecoInfinito"
-        self.ecoFnFinito = "ecoFinito"
+        # personalizzabile
+        self.msgFineEco = "ecoFineProva"
 
         random.seed()
 
-    def aggiornaEco(self):
-        if self.continuaEco:
-            self.ecoMux.acquire()
-            durata = self.crono.durata()
-            self.ecoMux.release()
+        threading.Thread.__init__(self)
+        self.start()
 
+    def _esci(self, _):
+        raise utili.Problema('fine')
+
+    def run(self):
+        FUNZ = {
+            MSG_FINE_X_ERRORE: self._fine_x_errore,
+            MSG_INFINITO: self._Infinito,
+            MSG_FINITO: self._Finito,
+            'esci': self._esci
+        }
+        self.thd = True
+        while True:
+            try:
+                msg = self.codat.get()
+                FUNZ[msg[0]](msg[1])
+            except utili.Problema:
+                break
+        self.thd = False
+
+    def esci(self):
+        if self.thd:
+            self.codat.put(('esci', 0))
+            self.join()
+
+    def _msg_durata(self):
+        if self.continua:
+            durata = self.crono.durata()
             self.msg.set(utili.stampaDurata(int(round(durata * 1000.0, 0))))
 
-            self.timerEco = self.bottone.after(
-                self.durataTimer, self.aggiornaEco)
-        else:
-            self.bottone.after_cancel(self.timerEco)
-
-    def cambia_funzioni(self, ecoFinePerErrore, ecoInfinito, ecoFinito):
-        self.ecoFnFinePerErrore = ecoFinePerErrore
-        self.ecoFnInfinito = ecoInfinito
-        self.ecoFnFinito = ecoFinito
+    def cambia_messaggi(self, ecoFineProva):
+        self.msgFineEco = ecoFineProva
 
     def cambia_limite(self, nuovo):
         self.ecoLimite = nuovo
@@ -96,12 +136,12 @@ class ECO:
 
     def Bottone(self):
         if self.bottone["text"] == "Basta":
-            self.continuaEco = False
-            self.bottone.after_cancel(self.timerEco)
+            self.continua = False
+            self.timerEco.termina()
         else:
             esito, quanti = utili.validaCampo(self.numEco.get(), None, None)
             if esito:
-                self.continuaEco = True
+                self.continua = True
                 self.bottone["text"] = "Basta"
 
                 self.msg.set("Aspetta ...")
@@ -122,124 +162,128 @@ class ECO:
                 if self.ecoQuanti:
                     self._crea_dati()
 
-                    # Imposto un timer per le prove lunghe
-                    self.durataTimer = 60 * 1000
-                    self.timerEco = self.bottone.after(
-                        self.durataTimer, self.aggiornaEco)
+                # Imposto un timer per le prove lunghe
+                self.timerEco = utili.Periodico(self._msg_durata)
+                self.timerEco.avvia(60)
 
                 if quanti < 0:
-                    self.coda.put((self.ecoFnFinePerErrore, self, 0 - quanti))
+                    self.codat.put((MSG_FINE_X_ERRORE, 0 - quanti))
                 elif quanti == 0:
-                    self.coda.put((self.ecoFnInfinito, self))
+                    self.codat.put((MSG_INFINITO, 0))
                 else:
-                    self.coda.put((self.ecoFnFinito, self, quanti))
-
+                    self.codat.put((MSG_FINITO, quanti))
             else:
                 self.msg.set("Quanti echi ???")
 
-    # Esegui
+    # Esecuzione
 
-    def _esegui(self, dispo):
+    def _esegui(self):
         if self.ecoQuanti == 0:
-            return dispo.eco()
+            return self.funz_eco()
 
         random.shuffle(self.dati)
-        return dispo.eco(self.dati[:self.ecoQuanti])
+        return self.funz_eco(self.dati[:self.ecoQuanti])
 
-    def _stampa_bene(self, durata, sdurata):
-        milli = round(1000.0 * durata / self.ecoTot, 3)
-        tput = round((self.ecoQuanti * self.ecoTot) / durata, 1)
-        kib = round((self.ecoQuanti * self.ecoTot) / (durata * 1024), 1)
+    def _stampa_bene(self, totale, durata, sdurata):
+        milli = round(1000.0 * durata / totale, 3)
+        tput = round((self.ecoQuanti * totale) / durata, 1)
+        kib = round((self.ecoQuanti * totale) / (durata * 1024), 1)
         self.msg.set(
             "Eco: OK %d in %s (%.3f ms = %.1f B/s = %.1f KiB/s)" %
-            (self.ecoTot, sdurata, milli, tput, kib))
+            (totale, sdurata, milli, tput, kib))
 
-    def ecoFinePerErrore(self, quanti, dispo):
+    def _fine_x_errore(self, quanti):
         self.progBar.start(10)
 
-        self.ecoConta = 0
-        self.ecoTot = 0
+        conta = 0
+        tot = 0
 
         self.crono.conta()
-        while self.ecoConta < quanti and self.continuaEco:
-            self.ecoMux.acquire()
-            self.ecoTot += 1
+        while conta < quanti and self.continua:
+            tot += 1
 
-            if not self._esegui(dispo):
-                self.ecoConta += 1
-            self.ecoMux.release()
+            if not self._esegui():
+                conta += 1
 
-        self.continuaEco = False
         durata = self.crono.durata()
+        self.continua = False
+        self.timerEco.termina()
+        del self.timerEco
+        self.timerEco = None
         sdurata = utili.stampaDurata(int(round(durata * 1000.0, 0)))
 
-        if self.ecoConta == 0:
-            self._stampa_bene(durata, sdurata)
+        if conta == 0:
+            self._stampa_bene(tot, durata, sdurata)
         else:
             self.msg.set(
                 "Eco: %d errori su %d [%s]" %
-                (self.ecoConta, self.ecoTot, sdurata))
+                (conta, tot, sdurata))
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
+        self.codaf.put((self.msgFineEco,))
 
-    def ecoInfinito(self, dispo):
+    def _Infinito(self, _):
         self.progBar.start(10)
 
-        self.ecoConta = 0
-        self.ecoTot = 0
+        conta = 0
+        tot = 0
 
         self.crono.conta()
-        while self.continuaEco:
-            self.ecoMux.acquire()
-            self.ecoTot += 1
+        while self.continua:
+            tot += 1
 
-            if self._esegui(dispo):
-                self.ecoConta += 1
-            self.ecoMux.release()
+            if self._esegui():
+                conta += 1
 
         durata = self.crono.durata()
+        self.timerEco.termina()
+        del self.timerEco
+        self.timerEco = None
         sdurata = utili.stampaDurata(int(round(durata * 1000.0, 0)))
 
-        if self.ecoConta == self.ecoTot:
-            self._stampa_bene(durata, sdurata)
-        elif self.ecoConta == 0:
-            self.msg.set("Eco: ERR %d in %s" % (self.ecoTot, sdurata))
+        if conta == tot:
+            self._stampa_bene(tot, durata, sdurata)
+        elif conta == 0:
+            self.msg.set("Eco: ERR %d in %s" % (tot, sdurata))
         else:
             self.msg.set(
                 "Eco: OK %d / %d in %s" %
-                (self.ecoConta, self.ecoTot, sdurata))
+                (conta, tot, sdurata))
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
+        self.codaf.put((self.msgFineEco,))
 
-    def ecoFinito(self, quanti, dispo):
+    def _Finito(self, quanti):
         self.progBar.start(10)
 
-        self.ecoConta = 0
-        self.ecoTot = 0
+        conta = 0
+        tot = 0
 
         self.crono.conta()
-        while self.ecoTot < quanti and self.continuaEco:
-            self.ecoMux.acquire()
-            self.ecoTot += 1
+        while tot < quanti and self.continua:
+            tot += 1
 
-            if self._esegui(dispo):
-                self.ecoConta += 1
-            self.ecoMux.release()
+            if self._esegui():
+                conta += 1
 
-        self.continuaEco = False
         durata = self.crono.durata()
+        self.continua = False
+        self.timerEco.termina()
+        del self.timerEco
+        self.timerEco = None
         sdurata = utili.stampaDurata(int(round(durata * 1000.0, 0)))
 
-        if self.ecoConta == self.ecoTot:
-            self._stampa_bene(durata, sdurata)
-        elif self.ecoConta == 0:
-            self.msg.set("Eco: ERR %d in %s" % (self.ecoTot, sdurata))
+        if conta == tot:
+            self._stampa_bene(tot, durata, sdurata)
+        elif conta == 0:
+            self.msg.set("Eco: ERR %d in %s" % (tot, sdurata))
         else:
             self.msg.set(
                 "Eco: OK %d / %d in %s" %
-                (self.ecoConta, self.ecoTot, sdurata))
+                (conta, tot, sdurata))
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
+        self.codaf.put((self.msgFineEco,))

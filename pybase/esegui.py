@@ -11,7 +11,7 @@ import gui_support
 import utili
 
 
-class taskEsecutore(threading.Thread):
+class Esecutore(threading.Thread):
 
     def __init__(self, codaEXE, codaGUI):
         threading.Thread.__init__(self)

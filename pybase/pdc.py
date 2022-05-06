@@ -13,12 +13,11 @@ import utili
 
 _T_MAX = 3
 
-class _PROTO():
-    _BAUD = 115200
+
+class _PROTO:
     _INIZIO_TRAMA = 0xC5
     _FINE_TRAMA = 0xC2
     _CARATTERE_DI_FUGA = 0xCF
-    _CRC_INI = 0xC681
 
     @staticmethod
     def _aggiungi(dove, cosa):
@@ -33,11 +32,11 @@ class _PROTO():
 
     def _stato_0(self, rx):
         if rx == _PROTO._INIZIO_TRAMA:
-            self._info('inizio pacchetto')
+            self.diario.info('inizio pacchetto')
             self.nega = False
             self.stato = 1
         else:
-            self._info('inizio riga')
+            self.diario.info('inizio riga')
             self.pkt.append(rx)
             self.stato = 2
 
@@ -53,7 +52,7 @@ class _PROTO():
         elif _PROTO._FINE_TRAMA == rx:
             # almeno: comando + crc
             if len(self.pkt) >= 2 + 2:
-                crc = crcmod.Crc(0x11021, _PROTO._CRC_INI, False, 0x0000)
+                crc = crcmod.Crc(0x11021, self.crc_ini, False, 0x0000)
                 crc.update(self.pkt)
                 msgcrc = bytes(crc.digest())
                 if msgcrc[0] == msgcrc[1] == 0:
@@ -68,13 +67,13 @@ class _PROTO():
                         'rsp': self.pkt[2:]
                     }
 
-                    self._info('pacchetto ok')
+                    self.diario.info('pacchetto ok')
 
                     return True
                 else:
-                    self._errore('crc sbagliato')
+                    self.diario.error('crc sbagliato')
             else:
-                self._errore('pochi byte')
+                self.diario.error('pochi byte')
 
         elif _PROTO._CARATTERE_DI_FUGA == rx:
             self.nega = True
@@ -93,7 +92,7 @@ class _PROTO():
                     'tipo': 'riga',
                     'riga': str(self.pkt.decode('ascii'))
                 }
-                self._info('nuova riga')
+                self.diario.info('nuova riga')
                 return True
             except UnicodeDecodeError:
                 self.pkt = bytearray()
@@ -102,18 +101,10 @@ class _PROTO():
         self.pkt.append(rx)
         return False
 
-    def _info(self, questo):
-        if self.logger is not None:
-            self.logger.info(questo)
+    def __init__(self, crc_iniziale, logga=False):
+        self.crc_ini = crc_iniziale
 
-    def _errore(self, questo):
-        if self.logger is not None:
-            self.logger.error(questo)
-
-    def __init__(self, logga=False):
-        self.logger = None
-        if logga:
-            self.logger = logging.getLogger('prot')
+        self.diario = utili.LOGGA('proto' if logga else None)
 
         self.nega = False
 
@@ -149,7 +140,7 @@ class _PROTO():
                 { 'tipo': 'rsp', 'cmd': intero, 'rsp': bytearray }
 
         """
-        while any(self.esamina):
+        while len(self.esamina):
             if self.stati[self.stato](self.esamina.pop(0)):
                 self.pkt = bytearray()
                 self.stato = 0
@@ -170,7 +161,7 @@ class _PROTO():
         :param msg: bytearray contenente il messaggio
         :return: bytearray da trasmettere
         """
-        crc = crcmod.Crc(0x11021, _PROTO._CRC_INI, False, 0x0000)
+        crc = crcmod.Crc(0x11021, self.crc_ini, False, 0x0000)
         crc.update(msg)
         msgcrc = bytes(crc.digest())
 
@@ -195,39 +186,28 @@ class PdC(threading.Thread):
         *) riceve righe e risposte
     """
 
-    def _debug(self, txt, pkt):
-        if self.logger is not None:
-            self.logger.debug(txt + '[{}]: '.format(len(pkt)) + utili.stringa_da_ba(pkt, sep=' '))
-
-    def _errore(self, questo):
-        if self.logger is not None:
-            self.logger.error(questo)
-
-    def __init__(self, logga=False, poll=0.1, **cosa):
-        self.logger = None
-        if logga:
-            self.logger = logging.getLogger('pompa')
+    def __init__(self, baud, crc_ini, logga=False, hw_flow_ctrl=True, poll=0.1, **cosa):
+        self.diario = utili.LOGGA('PDC' if logga else None)
 
         self.poll = poll
-        self.proto = _PROTO(logga)
+        self.proto = _PROTO(crc_ini, logga)
 
         self.mutex = threading.Lock()
         self.cmd_corr = None
 
         self.uart = None
-        if 'uart' in cosa:
+        if 'dev' in cosa:
             # Apro come seriale
             try:
-                self.uart = serial.Serial(cosa['uart'],
-                                          _PROTO._BAUD,
-                                          serial.EIGHTBITS,
-                                          serial.PARITY_NONE,
-                                          serial.STOPBITS_ONE,
+                self.uart = serial.Serial(cosa['dev'],
+                                          baudrate=baud,
+                                          bytesize=serial.EIGHTBITS,
+                                          parity=serial.PARITY_NONE,
+                                          stopbits=serial.STOPBITS_ONE,
                                           timeout=1,
-                                          rtscts=False)
+                                          rtscts=hw_flow_ctrl)
             except (serial.SerialException, ValueError) as err:
-                if self.logger is not None:
-                    self.logger.critical(str(err))
+                self.diario.critical(str(err))
                 self.uart = None
         else:
             # Apro come usb
@@ -235,15 +215,14 @@ class PdC(threading.Thread):
                 self.uart = serial.serial_for_url(
                     'hwgrep://%s:%s' %
                     (cosa['vid'], cosa['pid']),
-                    baudrate=_PROTO._BAUD,
+                    baudrate=baud,
                     bytesize=serial.EIGHTBITS,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
                     timeout=1,
-                    rtscts=False)
+                    rtscts=hw_flow_ctrl)
             except serial.SerialException as err:
-                if self.logger is not None:
-                    self.logger.critical(str(err))
+                self.diario.critical(str(err))
                 self.uart = None
 
         if self.uart is not None:
@@ -266,7 +245,7 @@ class PdC(threading.Thread):
         msg += self.cmd_corr['prm']
 
         pkt = self.proto.crea_pkt(msg)
-        self._debug('TX', pkt)
+        self.diario.debug('TX', pkt)
 
         self.uart.write(pkt)
 
@@ -295,7 +274,7 @@ class PdC(threading.Thread):
                 self.proto.da_esaminare(tmp)
                 letti += tmp
             if any(letti):
-                self._debug('RX', letti)
+                self.diario.debug('RX', letti)
 
             # esamino il raccolto
             while True:
@@ -316,7 +295,7 @@ class PdC(threading.Thread):
                     self.cmd_corr['rsp'].put_nowait(rsp)
                     self.cmd_corr = None
                 else:
-                    self._errore('comando nullo')
+                    self.diario.error('comando nullo')
                 self.mutex.release()
 
     def chiudi(self):
@@ -357,14 +336,14 @@ class PdC(threading.Thread):
                 return len(rsp['rsp']) == 0
 
             if cmd | 0x4000 == rsp['cmd']:
-                self._errore('comando {:04X}: scono'.format(cmd))
+                self.diario.error('comando {:04X}: scono'.format(cmd))
                 return False
 
-            self._errore('comando {:04X}: errore'.format(cmd))
+            self.diario.error('comando {:04X}: errore'.format(cmd))
             return False
 
         except queue.Empty:
-            self._errore('comando {:04X}: timeout'.format(cmd))
+            self.diario.error('comando {:04X}: timeout'.format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()
@@ -389,14 +368,14 @@ class PdC(threading.Thread):
                 return len(rsp['rsp']) == 0
 
             if cmd | 0x4000 == rsp['cmd']:
-                self._errore('comando {:04X}: scono'.format(cmd))
+                self.diario.error('comando {:04X}: scono'.format(cmd))
                 return False
 
-            self._errore('comando {:04X}: errore'.format(cmd))
+            self.diario.error('comando {:04X}: errore'.format(cmd))
             return False
 
         except queue.Empty:
-            self._errore('comando {:04X}: timeout'.format(cmd))
+            self.diario.error('comando {:04X}: timeout'.format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()
@@ -421,20 +400,20 @@ class PdC(threading.Thread):
             if cmd | 0x8000 == rsp['cmd']:
                 if dim is not None:
                     if len(rsp['rsp']) != dim:
-                        self._errore('comando {:04X}: dimensione sbagliata'.format(cmd))
+                        self.diario.error('comando {:04X}: dimensione sbagliata'.format(cmd))
                         return None
 
                 return rsp['rsp']
 
             if cmd | 0x4000 == rsp['cmd']:
-                self._errore('comando {:04X}: scono'.format(cmd))
+                self.diario.error('comando {:04X}: scono'.format(cmd))
                 return None
 
-            self._errore('comando {:04X}: errore'.format(cmd))
+            self.diario.error('comando {:04X}: errore'.format(cmd))
             return None
 
         except queue.Empty:
-            self._errore('comando {:04X}: timeout'.format(cmd))
+            self.diario.error('comando {:04X}: timeout'.format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()
@@ -459,19 +438,19 @@ class PdC(threading.Thread):
             if cmd | 0x8000 == rsp['cmd']:
                 if dim is not None:
                     if len(rsp['rsp']) != dim:
-                        self._errore('comando {:04X}: dimensione sbagliata'.format(cmd))
+                        self.diario.error('comando {:04X}: dimensione sbagliata'.format(cmd))
                         return None
                 return rsp['rsp']
 
             if cmd | 0x4000 == rsp['cmd']:
-                self._errore('comando {:04X}: scono'.format(cmd))
+                self.diario.error('comando {:04X}: scono'.format(cmd))
                 return None
 
-            self._errore('comando {:04X}: errore'.format(cmd))
+            self.diario.error('comando {:04X}: errore'.format(cmd))
             return None
 
         except queue.Empty:
-            self._errore('comando {:04X}: timeout'.format(cmd))
+            self.diario.error('comando {:04X}: timeout'.format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()

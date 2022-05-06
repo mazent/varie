@@ -317,6 +317,30 @@ class Periodico(threading.Thread):
         return self.secondi is not None
 
 
+class INTERO_ATOMICO:
+    def __init__(self, val=0):
+        self.val = val
+        self.mux = threading.Lock()
+
+    def leggi(self):
+        x = 0
+        with self.mux:
+            x = self.val
+        return x
+
+    def scrivi(self, cosa):
+        with self.mux:
+            self.val = cosa
+
+    def inc(self):
+        with self.mux:
+            self.val += 1
+
+    def dec(self):
+        with self.mux:
+            self.val -= 1
+
+
 def stampaTabulare(pos, dati, prec=4):
     """
         Stampa il bytearray dati incolonnando per 16
@@ -504,8 +528,12 @@ class LOGGA:
     def abilitato(self):
         return self.logger is not None
 
-    def debug(self, msg):
+    # in ordine di verbosita'
+
+    def debug(self, msg, ba=None):
         if self.logger is not None:
+            if ba is not None:
+                msg = msg + ' [{}]:'.format(len(ba)) + stringa_da_ba(ba, ' ')
             self.logger.debug(msg)
 
     def info(self, msg):
@@ -604,6 +632,8 @@ def lista_seriali():
             diz[elem.device] = (desc, manuf, elem.vid, elem.pid)
     return diz
 
+def slip(secondi):
+    time.sleep(secondi)
 
 if __name__ == '__main__':
     for z in range(10):
