@@ -256,9 +256,11 @@ class Problema(Exception):
     def __init__(self, msg):
         Exception.__init__(self)
 
+        self.msg = msg
+
         # recupero la posizione del chiamante
         fi = inspect.getframeinfo(inspect.currentframe().f_back)
-        self.msg = '<' + fi.filename + ': ' + str(fi.lineno) + '> ' + msg
+        self.pos = fi.filename + ': ' + str(fi.lineno)
 
     def __str__(self):
         return self.msg
@@ -518,6 +520,7 @@ class LOGGA:
     #         format='%(asctime)s - %(levelname)s - %(message)s')
     #     logging.getLogger().addHandler(logging.StreamHandler())
     # Tutti istanziano questa classe e usano i suoi metodi
+    #     self.diario = utili.LOGGA(__main__ if logga else None)
 
     def __init__(self, logger=None):
         if logger is None:

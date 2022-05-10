@@ -15,9 +15,12 @@
         *) Una progressbar
         *) La funzione che implementa l'eco vero e proprio: riceve i
            dati da trasmettere (o niente) e restituisce l'esito (bool)
-        *) Una coda dove inviare il messaggio di fine prova:
+        *) Una coda dove inviare il messaggio di fine prova (opzionale):
                 msgFineEco
            Il messaggio puo' essere cambiato con: cambia_messaggi()
+
+    Ricordarsi di chiudere:
+        eco.esci()
 
     Quindi:
         self.eco = eco.ECO(self.Button5,
@@ -25,8 +28,7 @@
                            gui_support.dimEco,
                            gui_support.Messaggio,
                            self.TProgressbar1,
-                           self._un_eco,
-                           self.codaEXE)
+                           self._un_eco)
         self.eco.cambia_limite(dispo.DISPO.DIM_DATI_CMD)
 
 """
@@ -53,7 +55,7 @@ class ECO(threading.Thread):
                  msg,
                  progBar,
                  fn,
-                 coda_fine):
+                 coda_fine=None):
         # salvo i parametri
         self.bottone = bottone
         self.numEco = numeco
@@ -221,7 +223,8 @@ class ECO(threading.Thread):
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
-        self.codaf.put((self.msgFineEco,))
+        if self.codaf is not None:
+            self.codaf.put((self.msgFineEco,))
 
     def _Infinito(self, _):
         self.progBar.start(10)
@@ -253,7 +256,8 @@ class ECO(threading.Thread):
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
-        self.codaf.put((self.msgFineEco,))
+        if self.codaf is not None:
+            self.codaf.put((self.msgFineEco,))
 
     def _Finito(self, quanti):
         self.progBar.start(10)
@@ -286,4 +290,5 @@ class ECO(threading.Thread):
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
-        self.codaf.put((self.msgFineEco,))
+        if self.codaf is not None:
+            self.codaf.put((self.msgFineEco,))
