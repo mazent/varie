@@ -528,7 +528,7 @@ class LOGGA:
     #         format='%(asctime)s - %(levelname)s - %(message)s')
     #     logging.getLogger().addHandler(logging.StreamHandler())
     # Tutti istanziano questa classe e usano i suoi metodi
-    #     self.diario = utili.LOGGA(__main__ if logga else None)
+    #     self.diario = utili.LOGGA('nome' if logga else None)
 
     def __init__(self, logger=None):
         if logger is None:

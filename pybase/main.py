@@ -4,27 +4,23 @@
     Script principale
 """
 
-import sys
-try:
-    import Queue as coda
-except ImportError:
-    import queue as coda
+import threading
+import queue as coda
+import tkinter as tk
 
 import gui
 import gui_support
 
 import esegui
 import utili
+import eco
+import dispositivo
 
+TAB_CHIUSA = {1: False, 2: False}
+TAB_APERTA = {1: True, 2: True}
 
-NOME_UART = None
-if sys.platform.startswith("win32"):
-    NOME_UART = "COM"
-else:
-    NOME_UART = "/dev/tty"
-
-TAB_CHIUSA = { 1: False }
-TAB_APERTA = { 1: True }
+VID_DISPO = 0x0403
+PID_DISPO = 0x6001
 
 
 class MAIN(gui.GUI):
@@ -33,21 +29,26 @@ class MAIN(gui.GUI):
     # preferisco ereditare ma, quando si aggiunge un bottone, bisogna lasciare il comando
     # vuoto e metterlo qua
     def _callback(self):
-        # tasto che cambia operazione
-        self.Button1.bind('<ButtonRelease-1>',self.apriSeriale)
-        # tasto normale
-        self.Button2.configure(command=self.Eco)
-        # tasto che inizia/termina operazione (cfr self.evnFine)
-        self.Button44.configure(command=self.bteco)
-
+        # # tasto che cambia operazione (prende un argomento)
+        self.Button1.bind('<ButtonRelease-1>', self._apri_seriale)
+        # # tasto normale
+        self.Button2.configure(command=self._trova_seriali)
+        # # tasto che inizia/termina operazione (cfr self.evnFine)
+        # self.Button44.configure(command=self.bteco)
+        self.Button3.configure(command=self._eco)
+        self.Button4.configure(command=self._eco_prova)
+        self.Button5.configure(command=self._canc_dia)
 
     def __init__(self, master=None):
         self.master = master
         gui.GUI.__init__(self, master)
 
-        self.logger = None
-
-        gui_support.portaSeriale.set(NOME_UART)
+        #     logging.basicConfig(
+        #         filename='desolfa.txt',
+        #         level=logging.DEBUG,
+        #         format='%(asctime)s - %(levelname)s - %(message)s')
+        #     logging.getLogger().addHandler(logging.StreamHandler())
+        self.logger = utili.LOGGA()
 
         self._callback()
 
@@ -58,48 +59,60 @@ class MAIN(gui.GUI):
         # tasti che iniziano e terminano operazioni
         self.evnFine = threading.Event()
 
+        # seriali
+        self._trova_seriali()
+
         # Code per la comunicazione fra grafica e ciccia
         self.codaEXE = coda.Queue()
         self.codaGUI = coda.Queue()
 
         self.task = esegui.Esecutore(self.codaEXE, self.codaGUI)
 
-        self.eco = eco.ECO(self.Button3,
+        self.eco = eco.ECO(self.Button4,
                            gui_support.numEco,
+                           gui_support.dimEco,
                            gui_support.Messaggio,
                            self.TProgressbar1,
-                           self.codaEXE)
+                           self._un_eco)
+        self.eco.cambia_limite(dispositivo.DISPO.DIM_DATI_CMD)
 
         # Comandi dall'esecutore
         self.cmd = {
-            'fbteco': self._fine_bteco,
+            # 'fbteco': self._fine_bteco,
+            'd_scrivi': self._diario_dispo
         }
         self._esegui_GUI()
 
-    def _fine_bteco(self):
-        # Il thd ha finito
-        gui_support.Messaggio.set("qualcosa")
+    def _diario_dispo(self, riga):
+        self.Scrolledlistbox2.insert(tk.END, riga)
+        self.Scrolledlistbox2.see(tk.END)
 
-        # Il mio bottone e' riutilizzabile ...
-        self.Button44['text'] = 'Eco'
-        self.Button44['state'] = gui.tk.NORMAL
-
-        # ... e anche quelli incompatibili
-        self.Button15['state'] = gui.tk.NORMAL
-
-        # ... pronto!
-        self.evnFine.clear()
-
+    # def _fine_bteco(self):
+    #     # Il thd ha finito
+    #     gui_support.Messaggio.set("qualcosa")
+    #
+    #     # Il mio bottone e' riutilizzabile ...
+    #     self.Button44['text'] = 'Eco'
+    #     self.Button44['state'] = gui.tk.NORMAL
+    #
+    #     # ... e anche quelli incompatibili
+    #     self.Button15['state'] = gui.tk.NORMAL
+    #
+    #     # ... pronto!
+    #     self.evnFine.clear()
 
     def __del__(self):
         pass
+
+    def _un_eco(self, dati=None):
+        return self.dispo.eco(dati)
 
     def chiudi(self):
         self.codaEXE.put(("esci",))
         self.task.join()
 
         if self.dispo is not None:
-            self.dispo.Chiudi()
+            self.dispo.chiudi()
             self.dispo = None
 
     def _imposta_tab(self, lista):
@@ -124,86 +137,66 @@ class MAIN(gui.GUI):
 
         self.master.after(300, self._esegui_GUI)
 
-    # ---------- SERIALE ------------------------------------------------------
+    # --------- SERIALE ------------------------------------
 
-    def _apri_o_chiudi(self, svid, spid, bottone, testo, entry, bott1, bott2):
+    def _trova_seriali(self):
+        self.Scrolledlistbox1.delete(0, tk.END)
+
+        ls = utili.lista_seriali()
+        for k, v in ls.items():
+            if len(v) != 4:
+                continue
+
+            if v[2] != VID_DISPO:
+                continue
+
+            if v[3] != PID_DISPO:
+                continue
+            self.Scrolledlistbox1.insert(
+                tk.END, k + ' - ' + v[0] + ' - ' + v[1])
+
+    def _chiudi_seriale(self):
+        self.dispo.chiudi()
+        self.dispo = None
+        self.codaEXE.put(("Dispositivo", self.dispo))
+
+        self.Button1['text'] = 'Usa questa'
+        self._imposta_tab(TAB_CHIUSA)
+
+    def _apri_seriale(self,_):
         if self.dispo is None:
-            try:
-                if svid is None and spid is None:
-                    # apro una seriale 'normale'
-                    porta = gui_support.portaSeriale.get()
-                    if porta is None:
-                        raise utili.problema('? che porta ?')
-                    elif any(porta):
-                        self.dispo = sc681.SC681(logga=self.logger is not None, uart=porta)
-                    else:
-                        raise utili.problema('? che porta ?')
-                else:
-                    # apro una seriale usb
-                    self.dispo = sc681.SC681(logga=self.logger is not None, vid=svid, pid=spid)
-
-                # se arrivo qua ho in mano il coso
+            cs = self.Scrolledlistbox1.curselection()
+            if len(cs) == 0:
+                gui_support.Messaggio.set("? quale ?")
+            else:
+                sdati = self.Scrolledlistbox1.get(cs[0])
+                dati = sdati.split('-')
+                dev = dati[0].strip()
+                self.dispo = dispositivo.DISPO(dev=dev)
                 if not self.dispo.a_posto():
                     del self.dispo
                     self.dispo = None
                 else:
-                    self.eco.cambia_limite(self.dispo.DIM_DATI_CMD)
                     self.codaEXE.put(("Dispositivo", self.dispo))
 
-                    bottone['text'] = 'Mollala'
-                    entry['state'] = 'readonly'
-                    bott1['state'] = 'disabled'
-                    bott2['state'] = 'disabled'
-
+                    self.Button1['text'] = 'Mollala'
                     self._imposta_tab(TAB_APERTA)
-
-            except utili.Problema as err:
-                print(err)
-                gui_support.portaSeriale.set(NOME_UART)
         else:
-            self.dispo.chiudi()
-            self.dispo = None
-            self.codaEXE.put(("Dispositivo", self.dispo))
+            self._chiudi_seriale()
 
-            bottone['text'] = testo
-            entry['state'] = 'normal'
-            bott1['state'] = 'normal'
-            bott2['state'] = 'normal'
+    # --------- VARIE ---------------------------------------------
 
-            self._imposta_tab(TAB_CHIUSA)
+    def _eco(self):
+        gui_support.Messaggio.set("Aspetta ...")
+        self.codaEXE.put(("eco",))
 
-    def apriUSB(self):
-        self._apri_o_chiudi('04B4', 'F139', self.Button4, 'Usa USB', self.Entry1, self.Button47, self.Button1)
+    def _eco_prova(self):
+        self.eco.Bottone()
 
-    def apriFTDI(self):
-        self._apri_o_chiudi('0403', '6001', self.Button47, 'Usa FTDI',
-                            self.Entry1, self.Button4, self.Button1)
+    # --------- DIARIO --------------------------------------------
 
-    def apriSeriale(self):
-        self._apri_o_chiudi(None, None, self.Button1, 'Usa questa', self.Entry1, self.Button47, self.Button4)
-
-    # --------- VARIE ----------------------------------------------------------
-
-    def bteco(self):
-        if not self.evnFine.is_set():
-            # Inizio
-            self.evnFine.set()
-            self.Button44['text'] = 'Basta'
-
-            # eventuali operazioni incompatibili
-            self.Button15['state'] = gui.tk.DISABLED
-
-            # attivo il thd
-            gui_support.Messaggio.set("Aspetta ...")
-            self.codaEXE.put(("bteco", self.evnFine))
-        else:
-            # Fine
-            self.Button44['state'] = gui.tk.DISABLED
-
-            # segnalo al thd (che deve controllare sempre che l'evento sia set)
-            self.evnFine.clear()
-
-            # quando il thd finisce mi manda un messaggio
+    def _canc_dia(self):
+        self.Scrolledlistbox2.delete(0, tk.END)
 
 
 if __name__ == '__main__':
@@ -218,7 +211,7 @@ if __name__ == '__main__':
     FINESTRA = MAIN(ROOT)
 
     # dopo che la finestra e' creata imposto ...
-    ROOT.title('titolo')
+    ROOT.title('Desolfatore')
     ROOT.resizable(False, False)
     gui_support.init(ROOT, FINESTRA)
 
