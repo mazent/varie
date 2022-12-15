@@ -9,9 +9,9 @@ import threading
 import random
 import string
 import time
-import serial.tools.list_ports as lp
-import tkinter.filedialog as dialogo
 import inspect
+import tkinter.filedialog as dialogo
+import serial.tools.list_ports as lp
 
 
 def validaStringa(x, dimmin=None, dimmax=None):
@@ -40,7 +40,14 @@ def validaStringa(x, dimmin=None, dimmax=None):
     else:
         esito = True
 
-    return esito
+    return esito, x
+
+
+def intero(x):
+    try:
+        return int(x)
+    except ValueError:
+        return int(x, 16)
 
 
 def validaCampo(x, mini=None, maxi=None):
@@ -248,7 +255,7 @@ def baMac(mac):
     return mac
 
 
-class Problema(Exception):
+class PROBLEMA(Exception):
     """
         Eccezione
     """
@@ -384,8 +391,9 @@ def byte_casuali(quanti):
         vc.append(x)
     return vc
 
-def numero_casuale(max, min=0):
-    return random.randint(min, max)
+
+def numero_casuale(_max, _min=0):
+    return random.randint(_min, _max)
 
 
 def ba_da_stringa(stringa, sep='-', base=16):
@@ -577,6 +585,24 @@ def scegli_file_esistente(master, filetypes):
         'defaultextension': filetypes[0][1]
     }
     filename = dialogo.askopenfilename(**opzioni)
+
+    if filename is None:
+        return None
+
+    if not any(filename):
+        return None
+
+    return filename
+
+
+def scegli_file_nuovo(master, filetypes):
+    opzioni = {
+        'parent': master,
+        'filetypes': filetypes,
+        'title': 'Scegli il file',
+        'defaultextension': filetypes[0][1]
+    }
+    filename = dialogo.asksaveasfilename(**opzioni)
 
     if filename is None:
         return None
