@@ -508,7 +508,7 @@ def stringa_casuale(dim):
     return ''.join(random.choice(base) for _ in range(dim))
 
 
-class CRONOMETRO():
+class CRONOMETRO:
     def __init__(self):
         self.inizio = 0
         self.tempo = time.perf_counter
