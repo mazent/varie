@@ -404,7 +404,7 @@ def ba_da_stringa(stringa, sep='-', base=16):
     :param sep: separatore
     :return: il bytearray
     """
-    stringa = stringa.lstrip(' ')
+    stringa = stringa.strip(' ')
     ba = bytearray()
     x = stringa.split(sep)
     try:
