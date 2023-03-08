@@ -3,11 +3,17 @@
 if __name__ == '__main__':
     modif = False
     righe = []
+    conta = 0
     with open('gui.tcl', 'rt') as orig:
         while True:
             riga = orig.readline()
             if len(riga) == 0:
                 break
+            conta += 1
+
+            if 'vTcl:DefineAlias' in riga:
+                righe.append(riga)
+                continue
 
             if 'TLabelframe' not in riga:
                 righe.append(riga)
@@ -19,9 +25,11 @@ if __name__ == '__main__':
                 tlf = tlf + ' ' + riga.strip(' \t\n\\')
                 while '\\' in riga:
                     riga = orig.readline()
+                    conta += 1
                     tlf = tlf + ' ' + riga.strip(' \t\n\\')
 
                 riga = orig.readline()
+                conta += 1
                 if 'vTcl:DefineAlias' in riga:
                     break
 
@@ -82,8 +90,12 @@ if __name__ == '__main__':
                 righe.append('        -height ' + pezzi[height] + ' \n')
                 righe.append(riga)
                 modif = True
+            else:
+                print('OKKIO intorno alla riga {}'.format(conta))
 
     if modif:
         with open('nuovo_gui.tcl', 'wt') as usc:
             for riga in righe:
                 usc.write(riga)
+    else:
+        print('nessun TLabelframe da sostituire!')
