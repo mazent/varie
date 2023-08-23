@@ -1,7 +1,38 @@
 from pathlib import Path
 
+alias_porta = {
+    'GPIOA': 'GPIOA',
+    'GPIOB': 'GPIOB',
+    'GPIOC': 'GPIOC',
+    'GPIOD': 'GPIOD',
+    'GPIOE': 'GPIOE',
+    'GPIOF': 'GPIOF',
+    'GPIOG': 'GPIOG',
+    'GPIOH': 'GPIOH'
+}
+alias_pin = {
+    'GPIO_PIN_0': 'GPIO_PIN_0',
+    'GPIO_PIN_1': 'GPIO_PIN_1',
+    'GPIO_PIN_2': 'GPIO_PIN_2',
+    'GPIO_PIN_3': 'GPIO_PIN_3',
+    'GPIO_PIN_4': 'GPIO_PIN_4',
+    'GPIO_PIN_5': 'GPIO_PIN_5',
+    'GPIO_PIN_6': 'GPIO_PIN_6',
+    'GPIO_PIN_7': 'GPIO_PIN_7',
+    'GPIO_PIN_8': 'GPIO_PIN_8',
+    'GPIO_PIN_9': 'GPIO_PIN_9',
+    'GPIO_PIN_10': 'GPIO_PIN_10',
+    'GPIO_PIN_11': 'GPIO_PIN_11',
+    'GPIO_PIN_12': 'GPIO_PIN_12',
+    'GPIO_PIN_13': 'GPIO_PIN_13',
+    'GPIO_PIN_14': 'GPIO_PIN_14',
+    'GPIO_PIN_15': 'GPIO_PIN_15'
+}
 
-# elimina la roba del cubo dai file c e h
+lista_righe = []
+
+
+# crea un file coi pin messi bene
 
 def pin(nomef):
     # quante macro?
@@ -30,7 +61,7 @@ def pin(nomef):
 
     # salvo
     with open(nomef + '.pin', 'wt') as usc:
-        for elem in macro:
+        for elem in sorted(macro):
             usc.write("#define ")
             usc.write(elem[0])
             d1 = len(elem[0])
@@ -42,16 +73,56 @@ def pin(nomef):
             else:
                 usc.write(elem[1])
             usc.write("\n")
+    # trovo alias
+    for elem in macro:
+        if '_Port' in elem[0]:
+            alias_porta[elem[0]] = elem[1]
+        if '_Pin' in elem[0]:
+            alias_pin[elem[0]] = elem[1]
 
 
 # costruisce la lista dei pin usati per poi ricavare quelli liberi
 
-sospesi = 0
-pin_liberi = {}
-
 
 def salva_liberi():
-    # global pin_liberi
+    sospesi = 0
+    pin_liberi = {}
+    for riga in lista_righe:
+        if 'GPIO_InitStruct.Pin' in riga:
+            sospesi = 0
+            uguale = riga.find('=')
+            if uguale < 0:
+                print("ERRORE " + riga)
+                continue
+            uguale += 1
+            x = riga[uguale:]
+            l = x.split('|')
+            for p in l:
+                p = p.strip()
+                p = p.strip(';')
+                p = alias_pin[p]
+                pin = int(p[9:])
+                if pin > 15:
+                    print('? pin {} ?'.format(pin))
+                    continue
+                sospesi += 1 << pin
+        if 'HAL_GPIO_Init' in riga:
+            tonda = riga.find('(')
+            if tonda < 0:
+                print('errore ' + riga)
+                break
+            virgola = riga.find(',')
+            if virgola < 0:
+                print('errore ' + riga)
+                break
+            porta = riga[tonda + 1:virgola]
+            porta = alias_porta[porta]
+            if porta in pin_liberi:
+                pin_liberi[porta] |= sospesi
+            else:
+                pin_liberi[porta] = sospesi
+            sospesi = 0
+
     tutti = {
         'GPIOD': 0xFFFF,
         'GPIOE': 0xFFFF,
@@ -77,26 +148,10 @@ def salva_liberi():
 
 def liberi(nomef: str):
     def inizio(riga: str) -> int:
+        global sospesi
+
         if 'GPIO_InitStruct.Pin' in riga:
-            uguale = riga.find('=')
-            if uguale < 0:
-                return 1
-            uguale += 1
-            x = riga[uguale:]
-            l = x.split('|')
-            for p in l:
-                p = p.strip()
-                p = p.strip(';')
-                val = p.find('GPIO_PIN_')
-                if val < 0:
-                    print('errore: ' + p)
-                    continue
-                pin = int(p[val + 9:])
-                if pin > 15:
-                    print('? pin {} ?'.format(pin))
-                    continue
-                global sospesi
-                sospesi += 1 << pin
+            lista_righe.append(riga)
 
             if ';' in riga:
                 return 2
@@ -106,19 +161,8 @@ def liberi(nomef: str):
         return 0
 
     def acapo(riga: str) -> int:
-        l = riga.split('|')
-        for p in l:
-            p = p.strip()
-            p = p.strip(';')
-            val = p.find('GPIO_PIN_')
-            if val < 0:
-                continue
-            pin = int(p[val + 9:])
-            if pin > 15:
-                print('? pin {} ?'.format(pin))
-                continue
-            global sospesi
-            sospesi += 1 << pin
+        ultima = len(lista_righe) - 1
+        lista_righe[ultima] = lista_righe[ultima] + riga
 
         if ';' in riga:
             return 2
@@ -127,21 +171,7 @@ def liberi(nomef: str):
 
     def fine(riga: str) -> int:
         if 'HAL_GPIO_Init' in riga:
-            tonda = riga.find('(')
-            if tonda < 0:
-                print('errore ' + riga)
-                return 0
-            virgola = riga.find(',')
-            if virgola < 0:
-                print('errore ' + riga)
-                return 0
-            porta = riga[tonda + 1:virgola]
-            global pin_liberi, sospesi
-            if porta in pin_liberi:
-                pin_liberi[porta] |= sospesi
-            else:
-                pin_liberi[porta] = sospesi
-            sospesi = 0
+            lista_righe.append(riga)
             return 0
 
         return 2
@@ -168,6 +198,7 @@ if __name__ == "__main__":
     p = Path('.')
     l = list(p.glob('**/*.c')) + list(p.glob('**/*.h'))
 
+    # elimina la roba del cubo dai file .c e .h
     for f in l:
         print(f)
         righe = []
@@ -191,6 +222,8 @@ if __name__ == "__main__":
         if 'main.h' in nomef:
             pin(nomef)
         if 'main.c' in nomef:
+            liberi(nomef)
+        if 'usbd_conf.c' in nomef:
             liberi(nomef)
         if '_hal_msp.c' in nomef:
             liberi(nomef)
