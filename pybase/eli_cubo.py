@@ -73,7 +73,7 @@ def pin(nomef):
 
     # salvo
     with open(nomef + ".pin", "wt") as usc:
-        for elem in sorted(macro):
+        for elem in sorted(macro, key=lambda x: str.lower(x[0])):
             usc.write("#define ")
             usc.write(elem[0])
             d1 = len(elem[0])
