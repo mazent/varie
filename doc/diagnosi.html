@@ -1,0 +1,305 @@
+<HTML>
+
+<!--
+    Simboli: https://htmlhelp.com/reference/html40/entities/
+
+    Per i grafici:
+        *) Il file di testo puo' essere creato con http://www.asciiflow.com/
+           Le immagini si ottengono con:
+                java -jar ditaa0_9.jar ?.txt ?.png
+        *) dot (www.graphviz.org)
+		*) https://www.websequencediagrams.com/
+		*) https://mermaid-js.github.io/mermaid-live-editor
+		*) https://wavedrom.com/
+
+
+    Analisi python in github
+        https://codeclimate.com/oss/dashboard
+
+	hex speak: http://www.datagenetics.com/blog/march42013/index.html
+	    g -> 9    l -> 1    q ->        v ->
+	    h ->      m ->      r ->        w ->
+	    i -> 1    n ->      s -> 5      x ->
+	    j ->      o -> 0    t -> 7      y ->
+	    k ->      p ->      u ->        z -> 2
+
+	stile: http://www.w3.org/TR/html401/present/styles.html#edef-STYLE
+	.nome -> class="nome"
+	#nome -> id="nome"  (p.e. nei link interni)
+	
+	formule:
+		https://www.mathjax.org/
+		https://www.caam.rice.edu/~heinken/latex/symbols.pdf
+		$$...$$ and \[...\] for displayed mathematics, and \(...\) for in-line mathematics
+-->
+
+<HEAD>
+    <TITLE>Diagnosi</TITLE>
+    <STYLE TYPE="text/css">
+		H1              { text-align: center }
+        H2              { text-align: center }
+		P               { text-align: justify }
+		P:first-letter  { margin-left: 1cm }
+		DL:first-letter { margin-left: 1cm }
+		DT:first-letter { margin-left: 2cm }
+		DD:first-letter { margin-left: 2cm }
+		CAPTION         { font-weight: bold }
+		TD.titolo       { text-align: center; font-weight: bold; color: blue }
+        TD.centra       { text-align: center }
+
+		.evidenzia      { font-weight: bold; color: blue; font-size: 2em }
+		.attenzione     { font-weight: bold; color: red }
+		.corsivo		{ font-style: italic }
+		.neretto	    { font-weight: bold }
+		.nullo			{ text-decoration: line-through}
+    </STYLE>
+
+	<script type="text/javascript" async
+		src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML">
+	</script>
+	
+</HEAD>
+
+<BODY>
+    <H1>Diagnosi</H1>
+	
+		<H2>Interruzioni</H2>
+		
+			<P><UL>Diagnosi e altro
+				<LI><CODE>BT_CONN</CODE>
+				<LI><CODE>CAN_LS_ERR</CODE>
+				<LI><CODE>FPGA_INT</CODE>
+				<LI><CODE>J1850_CDET</CODE>
+				<LI><CODE>KEY_P1</CODE>
+				<LI><CODE>KEY_P8</CODE>
+				<LI><CODE>nINT_RMII</CODE>
+				<LI><CODE>POWER_GOOD</CODE>
+				<LI><CODE>UART1_RX</CODE>
+				<LI><CODE>UART2_RX</CODE>
+				<LI><CODE>USB_CAB_IN</CODE>
+			</UL>
+		
+
+		<H2>OBD</H2>
+		
+			<P><TABLE border="0">
+				<CAPTION>Legenda
+				<TR>
+					<TD>
+						<TABLE border="1" cellspacing="0" cellpadding="4">
+							<CAPTION>Connettore OBD
+							<TR>
+								<TH>Pin</TH>
+								<TH>K/L</TH>
+								<TH>DoIP</TH>
+							</TR>
+							<TR>
+								<TD><CODE>1</CODE></TD>
+								<TD><CITE>K0 L6</CITE></TD>
+								<TD>Modo 2</TD>
+							</TR>
+							<TR>
+								<TD><CODE>2</CODE></TD>
+								<TD><CITE>K11 L3</CITE></TD>
+								<TD></TD>
+							</TR>
+							<TR>
+								<TD><CODE>3</CODE></TD>
+								<TD><CITE>K1 L7</CITE></TD>
+								<TD>Modo 1</TD>
+							</TR>
+							<TR>
+								<TD><CODE>4</CODE></TD>
+								<TD rowspan=2 colspan=2>Gnd</TD>
+							</TR>
+							<TR>
+								<TD><CODE>5</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CODE>6</CODE></TD>
+								<TD><CITE>K5 L11</CITE></TD>
+								<TD></TD>
+							</TR>
+							<TR>
+								<TD><CODE>7</CODE></TD>
+								<TD><CITE>K2 L8</CITE></TD>
+								<TD></TD>
+							</TR>
+							<TR>
+								<TD><CODE>8</CODE></TD>
+								<TD><CITE>K3 L9</CITE></TD>
+								<TD>Sel. modo 1/2</TD>
+							</TR>
+							<TR>
+								<TD><CODE>9</CODE></TD>
+								<TD><CITE>K4 L10</CITE></TD>
+								<TD>Modo 2</TD>
+							</TR>
+							<TR>
+								<TD><CODE>10</CODE></TD>
+								<TD><CITE>K12 L4</CITE></TD>
+								<TD></TD>
+							</TR>
+							<TR>
+								<TD><CODE>11</CODE></TD>
+								<TD><CITE>K9 L1</CITE></TD>
+								<TD>Modo 1</TD>
+							</TR>
+							<TR>
+								<TD><CODE>12</CODE></TD>
+								<TD><CITE>K6 L12</CITE></TD>
+								<TD>Modo 1/2</TD>
+							</TR>
+							<TR>
+								<TD><CODE>13</CODE></TD>
+								<TD><CITE>K10 L2</CITE></TD>
+								<TD>Modo 1/2</TD>
+							</TR>
+							<TR>
+								<TD><CODE>14</CODE></TD>
+								<TD><CITE>K13 L5</CITE></TD>
+								<TD></TD>
+							</TR>
+							<TR>
+								<TD><CODE>15</CODE></TD>
+								<TD><CITE>K8 L0</CITE></TD>
+								<TD></TD>
+							</TR>
+							<TR>
+								<TD><CODE>16</CODE></TD>
+								<TD rowspan=2><CITE>Vbatt</CITE></TD>
+								<TD></TD>
+							</TR>
+						</TABLE>
+					</TD>
+
+					<TD>
+						<TABLE border="1" cellspacing="0" cellpadding="4">
+							<CAPTION>CH1
+							<TR>
+								<TH>Canale</TH>
+								<TH>Obd</TH>
+							</TR>
+							<TR>
+								<TD><CITE>K0</CITE></TD>
+								<TD><CODE>1</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K1</CITE></TD>
+								<TD><CODE>3</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K2</CITE></TD>
+								<TD><CODE>7</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K3</CITE></TD>
+								<TD><CODE>8</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K4</CITE></TD>
+								<TD><CODE>9</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K5</CITE></TD>
+								<TD><CODE>6</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K6</CITE></TD>
+								<TD><CODE>12</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K8</CITE></TD>
+								<TD><CODE>15</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K9</CITE></TD>
+								<TD><CODE>11</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K10</CITE></TD>
+								<TD><CODE>13</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K11</CITE></TD>
+								<TD><CODE>2</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K12</CITE></TD>
+								<TD><CODE>10</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>K13</CITE></TD>
+								<TD><CODE>14</CODE></TD>
+							</TR>
+						</TABLE>
+
+					</TD>
+
+					<TD>
+						<TABLE border="1" cellspacing="0" cellpadding="4">
+							<CAPTION>CH2
+							<TR>
+								<TH>Canale</TH>
+								<TH>Obd</TH>
+							</TR>
+							<TR>
+								<TD><CITE>L0</CITE></TD>
+								<TD><CODE>15</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L1</CITE></TD>
+								<TD><CODE>11</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L2</CITE></TD>
+								<TD><CODE>13</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L3</CITE></TD>
+								<TD><CODE>2</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L4</CITE></TD>
+								<TD><CODE>10</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L5</CITE></TD>
+								<TD><CODE>14</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L6</CITE></TD>
+								<TD><CODE>1</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L7</CITE></TD>
+								<TD><CODE>3</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L8</CITE></TD>
+								<TD><CODE>7</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L9</CITE></TD>
+								<TD><CODE>8</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L10</CITE></TD>
+								<TD><CODE>9</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L11</CITE></TD>
+								<TD><CODE>6</CODE></TD>
+							</TR>
+							<TR>
+								<TD><CITE>L12</CITE></TD>
+								<TD><CODE>12</CODE></TD>
+							</TR>
+						</TABLE>
+
+					</TD>
+				</TR>
+			</TABLE>
+
+</BODY>
+</HTML>
