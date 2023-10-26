@@ -71,13 +71,15 @@ def pin(nomef):
         if dim1 < dim:
             dim1 = dim
 
+    SPAZI = 4
+
     # salvo
     with open(nomef + ".pin", "wt") as usc:
         for elem in sorted(macro, key=lambda x: str.lower(x[0])):
             usc.write("#define ")
             usc.write(elem[0])
             d1 = len(elem[0])
-            diff = 1 + dim1 - d1
+            diff = SPAZI + dim1 - d1
             s = " " * diff
             usc.write(s)
             if "_PIN_" in elem[1]:
