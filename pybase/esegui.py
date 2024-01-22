@@ -12,36 +12,33 @@ import utili
 
 
 class Esecutore(threading.Thread):
-
     def __init__(self, codaEXE, codaGUI):
         threading.Thread.__init__(self)
         # o anche threading.Thread.__init__(self, daemon=True)
 
         self.sincro = {
-            'exe': codaEXE,
-            'gui': codaGUI,
+            "exe": codaEXE,
+            "gui": codaGUI,
         }
 
         self.dispo = None
         self.logger = utili.LOGGA()
 
-        self.comando = {
-            'eco': self._eco_e
-        }
+        self.comando = {"eco": self._eco_e}
 
         self.start()
 
     def run(self):
         while True:
-            lavoro = self.sincro['exe'].get()
+            lavoro = self.sincro["exe"].get()
             if lavoro[0] == "esci":
                 break
 
             if lavoro[0] == "Logger":
-                self.logger = utili.LOGGA('ESEGUI')
+                self.logger = utili.LOGGA("ESEGUI")
             elif lavoro[0] == "Dispositivo":
                 self.dispo = lavoro[1]
-                self.dispo.cambia_coda(self.sincro['gui'])
+                self.dispo.cambia_coda(self.sincro["gui"])
             elif not lavoro[0] in self.comando:
                 pass
             else:
@@ -49,9 +46,9 @@ class Esecutore(threading.Thread):
 
     def _manda_alla_grafica(self, x, y=None):
         if y is None:
-            self.sincro['gui'].put((x,))
+            self.sincro["gui"].put((x,))
         else:
-            self.sincro['gui'].put((x, y))
+            self.sincro["gui"].put((x, y))
 
     # --------- VARIE ----------------------------------------------------------
 

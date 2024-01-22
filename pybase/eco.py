@@ -45,7 +45,6 @@ MSG_FINITO = "provane un tot"
 
 
 class ECO(threading.Thread):
-
     def __del__(self):
         self.esci()
 
@@ -91,14 +90,14 @@ class ECO(threading.Thread):
         self.start()
 
     def _esci(self, _):
-        raise utili.Problema('fine')
+        raise utili.Problema("fine")
 
     def run(self):
         FUNZ = {
             MSG_FINE_X_ERRORE: self._fine_x_errore,
             MSG_INFINITO: self._Infinito,
             MSG_FINITO: self._Finito,
-            'esci': self._esci
+            "esci": self._esci,
         }
         self.thd = True
         while True:
@@ -111,7 +110,7 @@ class ECO(threading.Thread):
 
     def esci(self):
         if self.thd:
-            self.codat.put(('esci', 0))
+            self.codat.put(("esci", 0))
             self.join()
 
     def _msg_durata(self):
@@ -184,15 +183,16 @@ class ECO(threading.Thread):
             return self.funz_eco()
 
         random.shuffle(self.dati)
-        return self.funz_eco(self.dati[:self.ecoQuanti])
+        return self.funz_eco(self.dati[: self.ecoQuanti])
 
     def _stampa_bene(self, totale, durata, sdurata):
         milli = round(1000.0 * durata / totale, 3)
         tput = round((self.ecoQuanti * totale) / durata, 1)
         kib = round((self.ecoQuanti * totale) / (durata * 1024), 1)
         self.msg.set(
-            "Eco: OK %d in %s (%.3f ms = %.1f B/s = %.1f KiB/s)" %
-            (totale, sdurata, milli, tput, kib))
+            "Eco: OK %d in %s (%.3f ms = %.1f B/s = %.1f KiB/s)"
+            % (totale, sdurata, milli, tput, kib)
+        )
 
     def _fine_x_errore(self, quanti):
         self.progBar.start(10)
@@ -217,9 +217,7 @@ class ECO(threading.Thread):
         if conta == 0:
             self._stampa_bene(tot, durata, sdurata)
         else:
-            self.msg.set(
-                "Eco: %d errori su %d [%s]" %
-                (conta, tot, sdurata))
+            self.msg.set("Eco: %d errori su %d [%s]" % (conta, tot, sdurata))
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
@@ -250,9 +248,7 @@ class ECO(threading.Thread):
         elif conta == 0:
             self.msg.set("Eco: ERR %d in %s" % (tot, sdurata))
         else:
-            self.msg.set(
-                "Eco: OK %d / %d in %s" %
-                (conta, tot, sdurata))
+            self.msg.set("Eco: OK %d / %d in %s" % (conta, tot, sdurata))
 
         self.progBar.stop()
         self.bottone["text"] = self.testo
@@ -284,9 +280,7 @@ class ECO(threading.Thread):
         elif conta == 0:
             self.msg.set("Eco: ERR %d in %s" % (tot, sdurata))
         else:
-            self.msg.set(
-                "Eco: OK %d / %d in %s" %
-                (conta, tot, sdurata))
+            self.msg.set("Eco: OK %d / %d in %s" % (conta, tot, sdurata))
 
         self.progBar.stop()
         self.bottone["text"] = self.testo

@@ -30,7 +30,7 @@ class MAIN(gui.GUI):
     # vuoto e metterlo qua
     def _callback(self):
         # # tasto che cambia operazione (prende un argomento)
-        self.Button1.bind('<ButtonRelease-1>', self._apri_seriale)
+        self.Button1.bind("<ButtonRelease-1>", self._apri_seriale)
         # # tasto normale
         self.Button2.configure(command=self._trova_seriali)
         # # tasto che inizia/termina operazione (cfr self.evnFine)
@@ -79,7 +79,7 @@ class MAIN(gui.GUI):
         # Comandi dall'esecutore
         self.cmd = {
             # 'fbteco': self._fine_bteco,
-            'd_scrivi': self._diario_dispo
+            "d_scrivi": self._diario_dispo
         }
         self._esegui_GUI()
 
@@ -117,9 +117,9 @@ class MAIN(gui.GUI):
 
     def _imposta_tab(self, lista):
         for tab in lista:
-            stato = 'disabled'
+            stato = "disabled"
             if lista[tab]:
-                stato = 'normal'
+                stato = "normal"
 
             self.TNotebook1.tab(tab, state=stato)
 
@@ -152,15 +152,14 @@ class MAIN(gui.GUI):
 
             if v[3] != PID_DISPO:
                 continue
-            self.Scrolledlistbox1.insert(
-                tk.END, k + ' - ' + v[0] + ' - ' + v[1])
+            self.Scrolledlistbox1.insert(tk.END, k + " - " + v[0] + " - " + v[1])
 
     def _chiudi_seriale(self):
         self.dispo.chiudi()
         self.dispo = None
         self.codaEXE.put(("Dispositivo", self.dispo))
 
-        self.Button1['text'] = 'Usa questa'
+        self.Button1["text"] = "Usa questa"
         self._imposta_tab(TAB_CHIUSA)
 
     def _apri_seriale(self,_):
@@ -170,7 +169,7 @@ class MAIN(gui.GUI):
                 gui_support.Messaggio.set("? quale ?")
             else:
                 sdati = self.Scrolledlistbox1.get(cs[0])
-                dati = sdati.split('-')
+                dati = sdati.split("-")
                 dev = dati[0].strip()
                 self.dispo = dispositivo.DISPO(dev=dev)
                 if not self.dispo.a_posto():
@@ -179,7 +178,7 @@ class MAIN(gui.GUI):
                 else:
                     self.codaEXE.put(("Dispositivo", self.dispo))
 
-                    self.Button1['text'] = 'Mollala'
+                    self.Button1["text"] = "Mollala"
                     self._imposta_tab(TAB_APERTA)
         else:
             self._chiudi_seriale()
@@ -199,7 +198,7 @@ class MAIN(gui.GUI):
         self.Scrolledlistbox2.delete(0, tk.END)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ROOT = gui.tk.Tk()
 
     # inizializzo ...
@@ -211,7 +210,7 @@ if __name__ == '__main__':
     FINESTRA = MAIN(ROOT)
 
     # dopo che la finestra e' creata imposto ...
-    ROOT.title('Desolfatore')
+    ROOT.title("Desolfatore")
     ROOT.resizable(False, False)
     gui_support.init(ROOT, FINESTRA)
 

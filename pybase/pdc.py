@@ -22,9 +22,10 @@ class _PROTO:
     @staticmethod
     def _aggiungi(dove, cosa):
         if cosa in (
-                _PROTO._INIZIO_TRAMA,
-                _PROTO._FINE_TRAMA,
-                _PROTO._CARATTERE_DI_FUGA):
+            _PROTO._INIZIO_TRAMA,
+            _PROTO._FINE_TRAMA,
+            _PROTO._CARATTERE_DI_FUGA,
+        ):
             dove.append(_PROTO._CARATTERE_DI_FUGA)
             dove.append((~cosa) & 0xFF)
         else:
@@ -32,11 +33,11 @@ class _PROTO:
 
     def _stato_0(self, rx):
         if rx == _PROTO._INIZIO_TRAMA:
-            self.diario.info('inizio pacchetto')
+            self.diario.info("inizio pacchetto")
             self.nega = False
             self.stato = 1
         else:
-            self.diario.info('inizio riga')
+            self.diario.info("inizio riga")
             self.pkt.append(rx)
             self.stato = 2
 
@@ -60,20 +61,16 @@ class _PROTO:
                     del self.pkt[-1]
                     del self.pkt[-1]
 
-                    intest = struct.unpack('<H', self.pkt[:2])
-                    self.rsp = {
-                        'tipo': 'rsp',
-                        'cmd': intest[0],
-                        'rsp': self.pkt[2:]
-                    }
+                    intest = struct.unpack("<H", self.pkt[:2])
+                    self.rsp = {"tipo": "rsp", "cmd": intest[0], "rsp": self.pkt[2:]}
 
-                    self.diario.info('pacchetto ok')
+                    self.diario.info("pacchetto ok")
 
                     return True
                 else:
-                    self.diario.error('crc sbagliato')
+                    self.diario.error("crc sbagliato")
             else:
-                self.diario.error('pochi byte')
+                self.diario.error("pochi byte")
 
         elif _PROTO._CARATTERE_DI_FUGA == rx:
             self.nega = True
@@ -88,11 +85,8 @@ class _PROTO:
 
         if rx == 0x0A:
             try:
-                self.rsp = {
-                    'tipo': 'riga',
-                    'riga': str(self.pkt.decode('ascii'))
-                }
-                self.diario.info('nuova riga')
+                self.rsp = {"tipo": "riga", "riga": str(self.pkt.decode("ascii"))}
+                self.diario.info("nuova riga")
                 return True
             except UnicodeDecodeError:
                 self.pkt = bytearray()
@@ -104,7 +98,7 @@ class _PROTO:
     def __init__(self, crc_iniziale, logga=False):
         self.crc_ini = crc_iniziale
 
-        self.diario = utili.LOGGA('proto' if logga else None)
+        self.diario = utili.LOGGA("proto" if logga else None)
 
         self.nega = False
 
@@ -112,11 +106,7 @@ class _PROTO:
         self.rsp = None
         self.pkt = bytearray()
 
-        self.stati = {
-            0: self._stato_0,
-            1: self._stato_1,
-            2: self._stato_2
-        }
+        self.stati = {0: self._stato_0, 1: self._stato_1, 2: self._stato_2}
         self.stato = 0
 
     def da_esaminare(self, dati):
@@ -187,7 +177,7 @@ class PdC(threading.Thread):
     """
 
     def __init__(self, baud, crc_ini, logga=False, hw_flow_ctrl=True, poll=0.1, **cosa):
-        self.diario = utili.LOGGA('PDC' if logga else None)
+        self.diario = utili.LOGGA("PDC" if logga else None)
 
         self.poll = poll
         self.proto = _PROTO(crc_ini, logga)
@@ -196,16 +186,18 @@ class PdC(threading.Thread):
         self.cmd_corr = None
 
         self.uart = None
-        if 'dev' in cosa:
+        if "dev" in cosa:
             # Apro come seriale
             try:
-                self.uart = serial.Serial(cosa['dev'],
-                                          baudrate=baud,
-                                          bytesize=serial.EIGHTBITS,
-                                          parity=serial.PARITY_NONE,
-                                          stopbits=serial.STOPBITS_ONE,
-                                          timeout=1,
-                                          rtscts=hw_flow_ctrl)
+                self.uart = serial.Serial(
+                    cosa["dev"],
+                    baudrate=baud,
+                    bytesize=serial.EIGHTBITS,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    timeout=1,
+                    rtscts=hw_flow_ctrl,
+                )
             except (serial.SerialException, ValueError) as err:
                 self.diario.critical(str(err))
                 self.uart = None
@@ -213,14 +205,14 @@ class PdC(threading.Thread):
             # Apro come usb
             try:
                 self.uart = serial.serial_for_url(
-                    'hwgrep://%s:%s' %
-                    (cosa['vid'], cosa['pid']),
+                    "hwgrep://%s:%s" % (cosa["vid"], cosa["pid"]),
                     baudrate=baud,
                     bytesize=serial.EIGHTBITS,
                     parity=serial.PARITY_NONE,
                     stopbits=serial.STOPBITS_ONE,
                     timeout=1,
-                    rtscts=hw_flow_ctrl)
+                    rtscts=hw_flow_ctrl,
+                )
             except serial.SerialException as err:
                 self.diario.critical(str(err))
                 self.uart = None
@@ -241,11 +233,11 @@ class PdC(threading.Thread):
 
     def _trasmetti(self):
         # mutex acquisito dal chiamante
-        msg = bytearray(struct.pack('<H', self.cmd_corr['cmd']))
-        msg += self.cmd_corr['prm']
+        msg = bytearray(struct.pack("<H", self.cmd_corr["cmd"]))
+        msg += self.cmd_corr["prm"]
 
         pkt = self.proto.crea_pkt(msg)
-        self.diario.debug('TX', pkt)
+        self.diario.debug("TX", pkt)
 
         self.uart.write(pkt)
 
@@ -257,7 +249,7 @@ class PdC(threading.Thread):
                 try:
                     cmd = self.coda_cmd.get(True, self.poll)
 
-                    if cmd['cmd'] == 0xE5C1:
+                    if cmd["cmd"] == 0xE5C1:
                         break
 
                     self.cmd_corr = cmd
@@ -274,7 +266,7 @@ class PdC(threading.Thread):
                 self.proto.da_esaminare(tmp)
                 letti += tmp
             if any(letti):
-                self.diario.debug('RX', letti)
+                self.diario.debug("RX", letti)
 
             # esamino il raccolto
             while True:
@@ -282,20 +274,20 @@ class PdC(threading.Thread):
                 if rsp is None:
                     break
 
-                if rsp['tipo'] == 'riga':
-                    self.riga_del_diario(rsp['riga'])
+                if rsp["tipo"] == "riga":
+                    self.riga_del_diario(rsp["riga"])
                     break
 
-                if rsp['cmd'] & 0xC000 == 0:
-                    self.evento(rsp['cmd'], rsp['rsp'])
+                if rsp["cmd"] & 0xC000 == 0:
+                    self.evento(rsp["cmd"], rsp["rsp"])
                     break
 
                 self.mutex.acquire()
                 if self.cmd_corr is not None:
-                    self.cmd_corr['rsp'].put_nowait(rsp)
+                    self.cmd_corr["rsp"].put_nowait(rsp)
                     self.cmd_corr = None
                 else:
-                    self.diario.error('comando nullo')
+                    self.diario.error("comando nullo")
                 self.mutex.release()
 
     def chiudi(self):
@@ -306,7 +298,7 @@ class PdC(threading.Thread):
         if self.uart is not None:
             # ammazzo il ddd
             cmd = {
-                'cmd': 0xE5C1,
+                "cmd": 0xE5C1,
             }
             self.coda_cmd.put_nowait(cmd)
 
@@ -327,23 +319,22 @@ class PdC(threading.Thread):
         """
         esito = queue.Queue()
 
-        self.coda_cmd.put_nowait(
-            {'cmd': cmd, 'prm': bytearray(), 'rsp': esito})
+        self.coda_cmd.put_nowait({"cmd": cmd, "prm": bytearray(), "rsp": esito})
 
         try:
             rsp = esito.get(True, to)
-            if cmd | 0x8000 == rsp['cmd']:
-                return len(rsp['rsp']) == 0
+            if cmd | 0x8000 == rsp["cmd"]:
+                return len(rsp["rsp"]) == 0
 
-            if cmd | 0x4000 == rsp['cmd']:
-                self.diario.error('comando {:04X}: scono'.format(cmd))
+            if cmd | 0x4000 == rsp["cmd"]:
+                self.diario.error("comando {:04X}: scono".format(cmd))
                 return False
 
-            self.diario.error('comando {:04X}: errore'.format(cmd))
+            self.diario.error("comando {:04X}: errore".format(cmd))
             return False
 
         except queue.Empty:
-            self.diario.error('comando {:04X}: timeout'.format(cmd))
+            self.diario.error("comando {:04X}: timeout".format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()
@@ -360,22 +351,22 @@ class PdC(threading.Thread):
         """
         esito = queue.Queue()
 
-        self.coda_cmd.put_nowait({'cmd': cmd, 'prm': prm, 'rsp': esito})
+        self.coda_cmd.put_nowait({"cmd": cmd, "prm": prm, "rsp": esito})
 
         try:
             rsp = esito.get(True, to)
-            if cmd | 0x8000 == rsp['cmd']:
-                return len(rsp['rsp']) == 0
+            if cmd | 0x8000 == rsp["cmd"]:
+                return len(rsp["rsp"]) == 0
 
-            if cmd | 0x4000 == rsp['cmd']:
-                self.diario.error('comando {:04X}: scono'.format(cmd))
+            if cmd | 0x4000 == rsp["cmd"]:
+                self.diario.error("comando {:04X}: scono".format(cmd))
                 return False
 
-            self.diario.error('comando {:04X}: errore'.format(cmd))
+            self.diario.error("comando {:04X}: errore".format(cmd))
             return False
 
         except queue.Empty:
-            self.diario.error('comando {:04X}: timeout'.format(cmd))
+            self.diario.error("comando {:04X}: timeout".format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()
@@ -392,28 +383,29 @@ class PdC(threading.Thread):
         """
         esito = queue.Queue()
 
-        self.coda_cmd.put_nowait(
-            {'cmd': cmd, 'prm': bytearray(), 'rsp': esito})
+        self.coda_cmd.put_nowait({"cmd": cmd, "prm": bytearray(), "rsp": esito})
 
         try:
             rsp = esito.get(True, to)
-            if cmd | 0x8000 == rsp['cmd']:
+            if cmd | 0x8000 == rsp["cmd"]:
                 if dim is not None:
-                    if len(rsp['rsp']) != dim:
-                        self.diario.error('comando {:04X}: dimensione sbagliata'.format(cmd))
+                    if len(rsp["rsp"]) != dim:
+                        self.diario.error(
+                            "comando {:04X}: dimensione sbagliata".format(cmd)
+                        )
                         return None
 
-                return rsp['rsp']
+                return rsp["rsp"]
 
-            if cmd | 0x4000 == rsp['cmd']:
-                self.diario.error('comando {:04X}: scono'.format(cmd))
+            if cmd | 0x4000 == rsp["cmd"]:
+                self.diario.error("comando {:04X}: scono".format(cmd))
                 return None
 
-            self.diario.error('comando {:04X}: errore'.format(cmd))
+            self.diario.error("comando {:04X}: errore".format(cmd))
             return None
 
         except queue.Empty:
-            self.diario.error('comando {:04X}: timeout'.format(cmd))
+            self.diario.error("comando {:04X}: timeout".format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()
@@ -431,26 +423,28 @@ class PdC(threading.Thread):
         """
         esito = queue.Queue()
 
-        self.coda_cmd.put_nowait({'cmd': cmd, 'prm': prm, 'rsp': esito})
+        self.coda_cmd.put_nowait({"cmd": cmd, "prm": prm, "rsp": esito})
 
         try:
             rsp = esito.get(True, to)
-            if cmd | 0x8000 == rsp['cmd']:
+            if cmd | 0x8000 == rsp["cmd"]:
                 if dim is not None:
-                    if len(rsp['rsp']) != dim:
-                        self.diario.error('comando {:04X}: dimensione sbagliata'.format(cmd))
+                    if len(rsp["rsp"]) != dim:
+                        self.diario.error(
+                            "comando {:04X}: dimensione sbagliata".format(cmd)
+                        )
                         return None
-                return rsp['rsp']
+                return rsp["rsp"]
 
-            if cmd | 0x4000 == rsp['cmd']:
-                self.diario.error('comando {:04X}: scono'.format(cmd))
+            if cmd | 0x4000 == rsp["cmd"]:
+                self.diario.error("comando {:04X}: scono".format(cmd))
                 return None
 
-            self.diario.error('comando {:04X}: errore'.format(cmd))
+            self.diario.error("comando {:04X}: errore".format(cmd))
             return None
 
         except queue.Empty:
-            self.diario.error('comando {:04X}: timeout'.format(cmd))
+            self.diario.error("comando {:04X}: timeout".format(cmd))
             self.mutex.acquire()
             self.cmd_corr = None
             self.mutex.release()
@@ -473,11 +467,11 @@ class PdC(threading.Thread):
         :param dati: dell'evento
         :return: niente
         """
-        sdati = ''
+        sdati = ""
         if dati is None:
             pass
         elif len(dati) == 0:
             pass
         else:
-            sdati = utili.stringa_da_ba(dati, ' ')
-        print('evento {:04X}: '.format(evn) + sdati)
+            sdati = utili.stringa_da_ba(dati, " ")
+        print("evento {:04X}: ".format(evn) + sdati)
