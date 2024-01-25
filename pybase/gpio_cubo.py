@@ -1,6 +1,13 @@
+from pathlib import Path
+
 if __name__ == "__main__":
+    p = Path(".")
+    l = list(p.glob("**/*.ioc"))
+
+    f = l[0]
+
     ris = {}
-    with open("SC828.ioc", "rt") as ing:
+    with open(f.name, "rt") as ing:
         while True:
             riga = ing.readline()
 
@@ -32,12 +39,13 @@ if __name__ == "__main__":
                 ris[pin] = dati
                 continue
 
-            if ".GPIO_ModeDefaultEXTI=" in riga:
+            if ".GPIO_ModeDefaultEXTI=" in riga or ".Signal=GPXTI" in riga:
                 pinp = riga.find('.')
                 pin = riga[:pinp]
                 dati = ris[pin]
-                dati.append('irq')
-                ris[pin] = dati
+                if len(dati) == 1:
+                    dati.append('irq')
+                    ris[pin] = dati
                 continue
 
     # print(ris)
@@ -57,23 +65,24 @@ if __name__ == "__main__":
             num = int(pin[2:])
             irq[num] = [pin, dati[0]]
 
-    if len(usc) == 0:
-        print("Nessuna uscita")
-    else:
-        print("Uscite")
-        for pin in usc:
-            print("    {} {}".format(pin, usc[pin]))
+    with open("gpio.txt", "wt") as gpio:
+        if len(usc) == 0:
+            gpio.write("Nessuna uscita\n")
+        else:
+            gpio.write("Uscite\n")
+            for pin in usc:
+                gpio.write("    {} {}\n".format(pin, usc[pin]))
 
-    if len(ing) == 0:
-        print("Nessun ingresso")
-    else:
-        print("Ingressi")
-        for pin in ing:
-            print("    {} {}".format(pin, ing[pin]))
+        if len(ing) == 0:
+            gpio.write("Nessun ingresso\n")
+        else:
+            gpio.write("Ingressi\n")
+            for pin in ing:
+                gpio.write("    {} {}\n".format(pin, ing[pin]))
 
-    if len(irq) == 0:
-        print("Nessuna interruzione")
-    else:
-        print("Interruzioni")
-        for key, value in sorted(irq.items()):
-            print("    {} {}".format(value[0], value[1]))
+        if len(irq) == 0:
+            gpio.write("Nessuna interruzione\n")
+        else:
+            gpio.write("Interruzioni\n")
+            for key, value in sorted(irq.items()):
+                gpio.write("    {} {}\n".format(value[0], value[1]))
