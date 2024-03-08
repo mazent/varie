@@ -72,6 +72,9 @@ if __name__ == "__main__":
         if dati[1] == "usc":
             usc[pin] = dati[0]
         if dati[1] == "irq":
+            sep = pin.find("_")
+            if sep > 0:
+                pin = pin[:sep]
             num = int(pin[2:])
             irq[num] = [pin, dati[0]]
         if dati[1] == "adc":
